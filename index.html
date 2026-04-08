@@ -10,6 +10,8 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
 :root{--bg:#FAF6F0;--bg2:#F2EBE3;--surface:#FFFFFF;--border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);--text:#2C2420;--muted:#7A6E6A;--dc:#1A56DB;--dc-bg:#EEF3FF;--cc:#7E3AF2;--cc-bg:#F3EFFE;--pink:#C4737A;--pink-bg:#FAEAEB;--pink-light:#F5D5D7;--green:#057A55;--green-bg:#DEF7EC;--amber:#92400E;--amber-bg:#FEF3C7;--red:#9B1C1C;--red-bg:#FDE8E8;--radius:12px;--radius-sm:8px;--shadow:0 1px 3px rgba(0,0,0,0.06);--shadow-md:0 4px 20px rgba(0,0,0,0.08);}
+[data-theme="dark"]{--bg:#1C1510;--bg2:#241A14;--surface:#2A1F18;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#EDE0D4;--muted:#9C8878;--dc:#6B9FFF;--dc-bg:#1A2340;--cc:#B497FF;--cc-bg:#241940;--pink:#E08A91;--pink-bg:#3A1F22;--pink-light:#4A2528;--green:#4ABA8A;--green-bg:#0D2E20;--amber:#F0B060;--amber-bg:#2E1F08;--red:#F08080;--red-bg:#2E0F0F;--shadow:0 1px 3px rgba(0,0,0,0.3);--shadow-md:0 4px 20px rgba(0,0,0,0.4);}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1C1510;--bg2:#241A14;--surface:#2A1F18;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#EDE0D4;--muted:#9C8878;--dc:#6B9FFF;--dc-bg:#1A2340;--cc:#B497FF;--cc-bg:#241940;--pink:#E08A91;--pink-bg:#3A1F22;--pink-light:#4A2528;--green:#4ABA8A;--green-bg:#0D2E20;--amber:#F0B060;--amber-bg:#2E1F08;--red:#F08080;--red-bg:#2E0F0F;--shadow:0 1px 3px rgba(0,0,0,0.3);--shadow-md:0 4px 20px rgba(0,0,0,0.4);}}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
 .layout{display:flex;min-height:100vh;}
@@ -216,6 +218,10 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
     </div>
   </div>
   <div class="sidebar-bottom">
+    <button onclick="toggleDarkMode()" id="dark-toggle" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 0;border:none;background:none;cursor:pointer;color:var(--muted);font-size:13px;font-family:'Inter',sans-serif;margin-bottom:0.75rem;">
+      <span id="dark-icon" style="font-size:15px">🌙</span>
+      <span id="dark-label">Donkere modus</span>
+    </button>
     <div class="exam-pill"><div class="exam-label">Tentamen 1</div><div class="exam-name" style="color:var(--dc)">Digital Crime</div><div class="exam-meta">Di 26 mei · 15:00–17:00</div><div style="font-size:11px;font-weight:500;color:var(--dc)" id="countdown-dc"></div></div>
     <div class="exam-pill"><div class="exam-label">Tentamen 2</div><div class="exam-name" style="color:var(--cc)">Conflict & Cooperation</div><div class="exam-meta">Do 28 mei · 09:00–11:00</div><div style="font-size:11px;font-weight:500;color:var(--cc)" id="countdown-cc"></div></div>
   </div>
@@ -566,6 +572,32 @@ CREATE POLICY "allow_all_events" ON events FOR ALL USING (true) WITH CHECK (true
 </div>
 
 <script type="module">
+// ── Dark mode ──
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme',theme);
+  const icon=document.getElementById('dark-icon');
+  const label=document.getElementById('dark-label');
+  if(icon) icon.textContent=theme==='dark'?'☀️':'🌙';
+  if(label) label.textContent=theme==='dark'?'Lichte modus':'Donkere modus';
+}
+function toggleDarkMode(){
+  const current=document.documentElement.getAttribute('data-theme');
+  const isDark=current==='dark'||(current===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
+  const next=isDark?'light':'dark';
+  localStorage.setItem('theme',next);
+  applyTheme(next);
+}
+// Init on load: stored preference, else follow system
+(function(){
+  const stored=localStorage.getItem('theme');
+  if(stored){applyTheme(stored);}
+  else if(window.matchMedia('(prefers-color-scheme:dark)').matches){applyTheme('dark');}
+  // listen for system changes (only if user hasn't manually chosen)
+  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',e=>{
+    if(!localStorage.getItem('theme'))applyTheme(e.matches?'dark':'light');
+  });
+})();
+
 const SUPABASE_URL=import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY=import.meta.env.VITE_SUPABASE_KEY;
 const ANTHROPIC_KEY=import.meta.env.VITE_ANTHROPIC_KEY;
@@ -1232,7 +1264,7 @@ function pomSetDuration(min){
 Object.assign(window, {
   showTab, closeModal, saveEdit,
   dragOver, dragLeave, dropFile, handleFile,
-  updateWordCount, cancelUpload,
+  toggleDarkMode, updateWordCount, cancelUpload,
   generateCards, generateSummary,
   loadCards, editCard, deleteCard, explainNL, resetCard,
   setMode, setTime, quickQuiz, setOrder,
