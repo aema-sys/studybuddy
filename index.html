@@ -284,23 +284,46 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 
 <!-- UPLOAD -->
 <div id="tab-upload" style="display:none">
-  <div class="page-header"><div class="page-title">Materiaal uploaden</div><div class="page-sub">Slides, readings of wetenschappelijke artikelen — ik maak er 20 flashcards van</div></div>
+  <div class="page-header"><div class="page-title">Materiaal uploaden</div><div class="page-sub">Slides, readings of wetenschappelijke artikelen — de app adviseert hoeveel kaartjes je nodig hebt</div></div>
   <div class="card">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1rem">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px">
       <select id="up-vak"><option value="">Kies vak...</option><option value="DC">Digital Crime (DC)</option><option value="CC">Conflict & Cooperation (C&C)</option></select>
-      <input type="text" id="up-week" placeholder="Week / thema (bijv. Week 3 — Ransomware)"/>
+      <div>
+        <input type="text" id="up-week" placeholder="Week / thema (bijv. Week 3 — Ransomware)"/>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Gebruik dezelfde naam bij meerdere uploads van dezelfde lecture — kaartjes worden samengevoegd.</div>
+      </div>
       <select id="up-type"><option value="slides">College slides</option><option value="artikel">Wetenschappelijk artikel</option><option value="reader">Reader / samenvatting</option></select>
     </div>
-    <div class="upload-zone" id="dropzone" onclick="document.getElementById('fileInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+    <div class="upload-zone" id="dropzone" onclick="document.getElementById('fileInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)" style="margin-top:1rem">
       <div style="font-size:24px;margin-bottom:6px;opacity:0.4">⬆</div>
       <div style="font-weight:500;font-size:14px">Klik of sleep een bestand hierheen</div>
       <div style="font-size:12.5px;color:var(--muted);margin-top:3px">.pdf, .txt, .md — of plak tekst hieronder</div>
     </div>
     <input type="file" id="fileInput" accept=".txt,.md,.pdf" style="display:none" onchange="handleFile(event)"/>
-    <textarea id="up-text" placeholder="Of plak hier je aantekeningen, artikel of samenvatting..." style="margin-top:10px"></textarea>
+    <textarea id="up-text" placeholder="Of plak hier je aantekeningen, artikel of samenvatting..." style="margin-top:10px" oninput="updateWordCount()"></textarea>
+
+    <!-- Woord-analyse balk -->
+    <div id="word-count-bar" style="display:none;align-items:center;gap:0.75rem;margin-top:8px;padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border)">
+      <span style="font-size:12px;color:var(--muted)">Woorden: <strong id="word-count-num">0</strong></span>
+      <span style="font-size:12px;color:var(--muted)">Geadviseerd: <strong id="advised-count">20</strong> kaartjes</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+        <label style="font-size:12px;color:var(--muted)">Aantal kaartjes:</label>
+        <input type="number" id="card-count" value="20" min="5" max="40" style="width:64px;text-align:center;padding:4px 8px"/>
+      </div>
+    </div>
+
+    <!-- Waarschuwing lange tekst -->
+    <div id="length-warning" style="display:none;margin-top:8px;padding:10px 14px;background:var(--amber-bg);border:1px solid #F6D860;border-radius:var(--radius-sm);font-size:13px;color:#78350F;line-height:1.6">
+      <strong>Deze tekst is erg lang.</strong> Voor de beste kwaliteit adviseer ik de PDF te splitsen en in twee delen te uploaden. Gebruik dezelfde weeknaam voor beide uploads — de kaartjes worden dan automatisch samengevoegd in de flashcard-weergave.
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-sm" onclick="cancelUpload()" style="border-color:#F6D860">Annuleer &amp; wis tekst</button>
+        <button class="btn btn-sm" onclick="document.getElementById('length-warning').style.display='none'" style="color:var(--muted)">Toch doorgaan</button>
+      </div>
+    </div>
+
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
       <button class="btn" id="sum-btn" onclick="generateSummary()">AI-samenvatting maken</button>
-      <button class="btn btn-primary" id="gen-btn" onclick="generateCards()">Genereer 20 flashcards →</button>
+      <button class="btn btn-primary" id="gen-btn" onclick="generateCards()">Genereer flashcards →</button>
     </div>
     <div id="gen-loading" class="loading-row" style="display:none"><div class="spinner"></div>Flashcards genereren via AI...</div>
     <div id="summary-result" style="display:none;margin-top:1rem"><div class="card-title">AI-samenvatting</div><div class="summary-box" id="summary-text"></div></div>
@@ -631,13 +654,32 @@ async function readPDF(file){
   try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text='';for(let i=1;i<=Math.min(pdf.numPages,50);i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(x=>x.str).join(' ')+'\n';}
   ta.value=text.trim().length<50?'Geen leesbare tekst gevonden (scan?).':text.trim();if(text.trim().length>50)toast(`PDF ingelezen — ${pdf.numPages} pagina's`);}catch(err){ta.value='PDF fout: '+err.message;}
 }
+function updateWordCount(){
+  const text=document.getElementById('up-text').value;
+  const words=text.trim()?text.trim().split(/\s+/).length:0;
+  const bar=document.getElementById('word-count-bar');
+  if(words>0){
+    bar.style.display='flex';
+    document.getElementById('word-count-num').textContent=words;
+    const advised=words<1500?15:words<3000?20:words<5000?25:30;
+    document.getElementById('advised-count').textContent=advised;
+    document.getElementById('card-count').value=advised;
+    document.getElementById('length-warning').style.display=words>6000?'block':'none';
+  }else{
+    bar.style.display='none';
+    document.getElementById('length-warning').style.display='none';
+  }
+}
+function cancelUpload(){document.getElementById('up-text').value='';updateWordCount();}
+
 async function generateCards(){
   const vak=document.getElementById('up-vak').value,week=document.getElementById('up-week').value.trim(),text=document.getElementById('up-text').value.trim(),matType=document.getElementById('up-type').value;
   if(!vak){toast('Kies eerst een vak.');return;}if(!text){toast('Voeg tekst toe.');return;}
+  const count=parseInt(document.getElementById('card-count')?.value||20);
   document.getElementById('gen-loading').style.display='flex';document.getElementById('gen-btn').disabled=true;
   const prompt=`You are a study coach for a Master's student in Crisis & Security Management at Leiden University.
 Course: ${vak==='DC'?'Digital Crime (DC)':'Conflict & Cooperation in Cyberspace (C&C)'}. Week/theme: ${week||'unspecified'}. Material type: ${matType}.
-Generate exactly 20 flashcards. Return ONLY a valid JSON array, no markdown:
+Generate exactly ${count} flashcards. Return ONLY a valid JSON array, no markdown:
 [{"q":"...","a":"...","theme":"Short theme label"}]
 Rules:
 - Language: English only
@@ -1190,6 +1232,7 @@ function pomSetDuration(min){
 Object.assign(window, {
   showTab, closeModal, saveEdit,
   dragOver, dragLeave, dropFile, handleFile,
+  updateWordCount, cancelUpload,
   generateCards, generateSummary,
   loadCards, editCard, deleteCard, explainNL, resetCard,
   setMode, setTime, quickQuiz, setOrder,
