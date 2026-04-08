@@ -1,0 +1,11 @@
+# Omgevingsvariabelen — NOOIT committen
+.env
+.env.local
+.env.*.local
+
+# Vite build output
+dist/
+node_modules/
+
+# OS bestanden
+.DS_Store

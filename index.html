@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Studiebuddy — MSc Crisis & Security Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<style>
+:root{--bg:#FAF6F0;--bg2:#F2EBE3;--surface:#FFFFFF;--border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);--text:#2C2420;--muted:#7A6E6A;--dc:#1A56DB;--dc-bg:#EEF3FF;--cc:#7E3AF2;--cc-bg:#F3EFFE;--pink:#C4737A;--pink-bg:#FAEAEB;--pink-light:#F5D5D7;--green:#057A55;--green-bg:#DEF7EC;--amber:#92400E;--amber-bg:#FEF3C7;--red:#9B1C1C;--red-bg:#FDE8E8;--radius:12px;--radius-sm:8px;--shadow:0 1px 3px rgba(0,0,0,0.06);--shadow-md:0 4px 20px rgba(0,0,0,0.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:232px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.25rem 0;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;}
+.main{margin-left:232px;flex:1;padding:2rem 2.5rem;max-width:calc(100vw - 232px);}
+.logo{padding:0 1.25rem 1.25rem;border-bottom:1px solid var(--border);margin-bottom:0.5rem;}
+.logo-title{font-family:'Lora',serif;font-size:18px;color:var(--text);}
+.logo-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.nav-section{padding:0.5rem 1rem 0.25rem;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 1.25rem;font-size:13.5px;color:var(--muted);cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all 0.12s;font-family:'Inter',sans-serif;}
+.nav-item:hover{color:var(--text);background:var(--bg);}
+.nav-item.active{color:var(--text);font-weight:500;background:var(--bg);}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:0.6;}
+.nav-item.active .nav-icon{opacity:1;}
+.sidebar-bottom{margin-top:auto;padding:1rem 1.25rem 0;border-top:1px solid var(--border);}
+.exam-pill{border-radius:var(--radius-sm);padding:0.7rem 0.875rem;margin-bottom:0.5rem;border:1px solid var(--border);background:var(--bg);}
+.exam-label{font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);}
+.exam-name{font-size:13px;font-weight:500;margin:2px 0 1px;}
+.exam-meta{font-size:11px;color:var(--muted);}
+.page-header{margin-bottom:1.75rem;}
+.page-title{font-family:'Lora',serif;font-size:26px;color:var(--text);line-height:1.2;}
+.page-sub{font-size:13px;color:var(--muted);margin-top:3px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;box-shadow:var(--shadow);}
+.card-title{font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:0.875rem;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow);}
+.stat-num{font-family:'Lora',serif;font-size:28px;color:var(--text);line-height:1;}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:3px;}
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 7px;border-radius:99px;}
+.tag-dc{background:var(--dc-bg);color:var(--dc);}
+.tag-cc{background:var(--cc-bg);color:var(--cc);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:var(--radius-sm);font-size:13.5px;font-family:'Inter',sans-serif;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text);transition:all 0.12s;}
+.btn:hover{background:var(--bg);}
+.btn:active{transform:scale(0.98);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.btn-primary{background:var(--text);color:#fff;border-color:var(--text);}
+.btn-primary:hover{opacity:0.87;background:var(--text);}
+.btn-dc{background:var(--dc-bg);color:var(--dc);border-color:transparent;}
+.btn-cc{background:var(--cc-bg);color:var(--cc);border-color:transparent;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-nl{background:var(--pink-bg);color:var(--pink);border-color:transparent;font-size:12px;padding:4px 9px;}
+.btn-danger{color:var(--red);border-color:#FCA5A5;}
+.btn-danger:hover{background:var(--red-bg);}
+select,input[type=text],textarea{width:100%;padding:8px 11px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13.5px;font-family:'Inter',sans-serif;background:var(--surface);color:var(--text);outline:none;transition:border-color 0.12s;}
+select:focus,input[type=text]:focus,textarea:focus{border-color:var(--text);}
+textarea{resize:vertical;min-height:100px;line-height:1.6;}
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius);padding:1.75rem 1.5rem;text-align:center;cursor:pointer;transition:all 0.12s;background:var(--bg);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--text);background:var(--bg2);}
+/* Flashcards */
+.fc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;}
+.flashcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;box-shadow:var(--shadow);}
+.fc-meta{display:flex;gap:5px;align-items:center;margin-bottom:0.6rem;flex-wrap:wrap;}
+.fc-q{font-size:13.5px;font-weight:500;color:var(--text);line-height:1.5;cursor:pointer;}
+.fc-q:hover{color:var(--dc);}
+.fc-a{font-size:13px;color:var(--muted);line-height:1.6;margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid var(--border);display:none;}
+.fc-a.open{display:block;}
+.fc-nl{font-size:13px;color:var(--amber);line-height:1.6;margin-top:0.5rem;padding:0.6rem;background:var(--amber-bg);border-radius:var(--radius-sm);display:none;}
+.fc-nl.open{display:block;}
+.fc-score{font-size:11px;padding:2px 7px;border-radius:99px;}
+.fc-score-none{background:var(--bg2);color:var(--muted);}
+.fc-score-bad{background:var(--red-bg);color:var(--red);}
+.fc-score-ok{background:var(--amber-bg);color:var(--amber);}
+.fc-score-good{background:var(--green-bg);color:var(--green);}
+.fc-actions{display:flex;gap:6px;margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid var(--border);align-items:center;flex-wrap:wrap;}
+/* Quiz */
+.quiz-wrap{max-width:620px;}
+.prog-bar{height:3px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-bottom:1.5rem;}
+.prog-fill{height:100%;background:var(--text);border-radius:99px;transition:width 0.3s;}
+.quiz-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);}
+.quiz-q{font-family:'Lora',serif;font-size:20px;color:var(--text);line-height:1.5;margin:0.875rem 0 1.5rem;}
+.feedback-box{border-radius:var(--radius-sm);padding:0.875rem 1rem;margin-top:0.875rem;font-size:13px;line-height:1.6;}
+.fb-good{background:var(--green-bg);color:#03543F;border:1px solid #84E1BC;}
+.fb-ok{background:var(--amber-bg);color:#78350F;border:1px solid #F6D860;}
+.fb-bad{background:var(--red-bg);color:#771D1D;border:1px solid #F8B4B4;}
+.model-ans{font-size:12.5px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.anki-answer{display:none;background:var(--bg);border-radius:var(--radius-sm);padding:1rem;margin-top:1rem;font-size:13.5px;line-height:1.6;border:1px solid var(--border);}
+.anki-answer.visible{display:block;}
+.anki-hint{font-size:13px;color:var(--muted);text-align:center;padding:1.5rem 0 0.5rem;}
+.rating-row{display:flex;gap:8px;margin-top:1rem;}
+.rating-btn{flex:1;padding:10px 4px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;cursor:pointer;background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;transition:all 0.12s;text-align:center;line-height:1.3;}
+.rating-btn.r1:hover{background:var(--red-bg);border-color:#F8B4B4;color:var(--red);}
+.rating-btn.r2:hover{background:#FEF3C7;border-color:#F6D860;color:var(--amber);}
+.rating-btn.r3:hover{background:#FEF9C3;border-color:#FDE047;color:#713F12;}
+.rating-btn.r4:hover,.rating-btn.r5:hover{background:var(--green-bg);border-color:#86EFAC;color:var(--green);}
+.rating-label{font-size:10px;display:block;margin-top:2px;opacity:0.8;}
+.mode-toggle{display:flex;gap:8px;margin-bottom:1.25rem;}
+.mode-btn{flex:1;padding:10px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;background:var(--surface);color:var(--muted);font-family:'Inter',sans-serif;text-align:center;transition:all 0.12s;}
+.mode-btn.active{background:var(--text);color:#fff;border-color:var(--text);}
+/* Topic bars */
+.topic-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.topic-row:last-child{border-bottom:none;}
+.topic-bar-bg{flex:1;height:4px;border-radius:99px;background:var(--bg2);}
+.topic-bar{height:4px;border-radius:99px;transition:width 0.5s;}
+/* Plan */
+.plan-task{display:flex;align-items:flex-start;gap:10px;padding:8px 0;font-size:13px;border-bottom:1px solid var(--border);}
+.plan-task:last-child{border-bottom:none;}
+.plan-task input[type=checkbox]{margin-top:2px;flex-shrink:0;cursor:pointer;width:15px;height:15px;}
+/* Essay */
+.essay-area{min-height:220px;}
+.essay-feedback{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-top:1rem;font-size:13.5px;line-height:1.7;}
+.essay-feedback h4{font-size:13px;font-weight:600;margin:1rem 0 0.3rem;color:var(--text);}
+.essay-feedback h4:first-child{margin-top:0;}
+/* AI Tutor chat */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 220px);min-height:400px;}
+.chat-messages{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:1rem;}
+.chat-msg{max-width:85%;padding:10px 14px;border-radius:var(--radius);font-size:13.5px;line-height:1.6;}
+.chat-msg.user{background:var(--text);color:#fff;align-self:flex-end;border-bottom-right-radius:3px;}
+.chat-msg.ai{background:var(--surface);color:var(--text);align-self:flex-start;border:1px solid var(--border);border-bottom-left-radius:3px;}
+.chat-msg.ai .chat-source{font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);}
+.chat-input-row{display:flex;gap:8px;}
+.chat-input-row input{flex:1;}
+/* Notes */
+.note-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow);margin-bottom:0.75rem;}
+.note-meta{font-size:11px;color:var(--muted);margin-bottom:0.4rem;}
+.note-content{font-size:13.5px;line-height:1.6;white-space:pre-wrap;}
+.note-actions{display:flex;gap:6px;margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid var(--border);}
+/* Summary */
+.summary-box{background:var(--bg);border-radius:var(--radius);padding:1.25rem;font-size:13.5px;line-height:1.8;border:1px solid var(--border);white-space:pre-wrap;}
+/* Misc */
+.loading-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);padding:0.875rem 0;}
+.spinner{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin 0.65s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:2.5rem 1rem;color:var(--muted);font-size:13.5px;}
+#toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--text);color:#fff;padding:11px 18px;border-radius:var(--radius-sm);font-size:13.5px;box-shadow:var(--shadow-md);opacity:0;transition:opacity 0.25s;pointer-events:none;z-index:9999;}
+#toast.show{opacity:1;}
+.result-screen{text-align:center;padding:2.5rem 2rem;}
+.result-num{font-family:'Lora',serif;font-size:64px;color:var(--text);line-height:1;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--radius);padding:1.5rem;width:480px;max-width:90vw;box-shadow:var(--shadow-md);}
+.modal-title{font-family:'Lora',serif;font-size:18px;margin-bottom:1rem;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;}
+.sql-box{background:#1A1A18;color:#d4d4c8;font-family:'Courier New',monospace;font-size:12px;padding:1rem;border-radius:var(--radius-sm);line-height:1.8;overflow-x:auto;white-space:pre;}
+@media(max-width:768px){.sidebar{display:none;}.main{margin-left:0;padding:1rem;max-width:100vw;}.stats-row{grid-template-columns:repeat(2,1fr);}.fc-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">Flashcard bewerken</div>
+    <input type="hidden" id="edit-id"/>
+    <div style="margin-bottom:0.75rem"><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Vraag</label><textarea id="edit-q" style="min-height:70px"></textarea></div>
+    <div><label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Antwoord</label><textarea id="edit-a" style="min-height:90px"></textarea></div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Annuleer</button><button class="btn btn-primary" onclick="saveEdit()">Opslaan</button></div>
+  </div>
+</div>
+
+<div class="layout">
+<aside class="sidebar">
+  <div class="logo"><div class="logo-title">Studiebuddy</div><div class="logo-sub">MSc Crisis & Security Management</div></div>
+  <div style="padding:0.5rem 1.25rem 0.25rem">
+    <div style="background:var(--pink-bg);border-radius:var(--radius-sm);padding:0.4rem 0.75rem;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:11px;color:var(--pink);font-weight:500">API kosten</span>
+      <span style="font-size:12px;font-weight:500;color:var(--pink)" id="cost-meter">$0.000</span>
+    </div>
+  </div>
+  <div class="nav-section">Studeren</div>
+  <button class="nav-item active" onclick="showTab('dashboard')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.5"/><rect x="14" y="3" width="7" height="7" rx="1" stroke-width="1.5"/><rect x="3" y="14" width="7" height="7" rx="1" stroke-width="1.5"/><rect x="14" y="14" width="7" height="7" rx="1" stroke-width="1.5"/></svg>Dashboard</button>
+  <button class="nav-item" onclick="showTab('plan')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke-width="1.5" stroke-linecap="round"/></svg>Studieplan</button>
+  <button class="nav-item" onclick="showTab('quiz')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="1.5"/><path d="M12 8v4l3 3" stroke-width="1.5" stroke-linecap="round"/></svg>Overhoren</button>
+  <button class="nav-item" onclick="showTab('essay')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke-width="1.5" stroke-linecap="round"/></svg>Essay oefenen</button>
+  <button class="nav-item" onclick="showTab('tutor')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-width="1.5" stroke-linecap="round"/></svg>AI-tutor</button>
+  <div class="nav-section" style="margin-top:0.5rem">Materiaal</div>
+  <button class="nav-item" onclick="showTab('upload')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4-4 4M12 4v12" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Uploaden</button>
+  <button class="nav-item" onclick="showTab('cards')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2" stroke-width="1.5"/><path d="M16 2H8" stroke-width="1.5" stroke-linecap="round"/></svg>Flashcards</button>
+  <button class="nav-item" onclick="showTab('notes')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-width="1.5" stroke-linecap="round"/></svg>Aantekeningen</button>
+  <button class="nav-item" onclick="showTab('progress')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 18l5-5 4 4 5-6 4 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Voortgang</button>
+  <button class="nav-item" onclick="showTab('setup')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="1.5"/><path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke-width="1.5" stroke-linecap="round"/></svg>Setup</button>
+  <div class="sidebar-bottom">
+    <div class="exam-pill"><div class="exam-label">Tentamen 1</div><div class="exam-name" style="color:var(--dc)">Digital Crime</div><div class="exam-meta">Di 26 mei · 15:00–17:00</div><div style="font-size:11px;font-weight:500;color:var(--dc)" id="countdown-dc"></div></div>
+    <div class="exam-pill"><div class="exam-label">Tentamen 2</div><div class="exam-name" style="color:var(--cc)">Conflict & Cooperation</div><div class="exam-meta">Do 28 mei · 09:00–11:00</div><div style="font-size:11px;font-weight:500;color:var(--cc)" id="countdown-cc"></div></div>
+  </div>
+</aside>
+
+<main class="main">
+
+<!-- DASHBOARD -->
+<div id="tab-dashboard">
+  <!-- Welcome hero -->
+  <div id="dash-hero" style="background:linear-gradient(135deg,#FAF0EE 0%,#F5E6E8 50%,#EEE8F5 100%);border-radius:16px;padding:1.75rem 2rem;margin-bottom:1.5rem;position:relative;overflow:hidden;border:1px solid var(--pink-light)">
+    <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:rgba(196,115,122,0.08);border-radius:50%"></div>
+    <div style="position:absolute;bottom:-30px;right:60px;width:80px;height:80px;background:rgba(126,58,242,0.06);border-radius:50%"></div>
+    <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--pink);margin-bottom:0.4rem" id="hero-datum"></div>
+    <div style="font-family:'Lora',serif;font-size:24px;color:var(--text);line-height:1.3;margin-bottom:0.3rem" id="hero-greeting"></div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:1.25rem" id="hero-quote"></div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap">
+      <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px">
+        <div style="font-family:'Lora',serif;font-size:22px;color:var(--pink)" id="hero-days-dc">—</div>
+        <div style="font-size:11px;color:var(--muted)">dagen tot DC</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px">
+        <div style="font-family:'Lora',serif;font-size:22px;color:#7E3AF2" id="hero-days-cc">—</div>
+        <div style="font-size:11px;color:var(--muted)">dagen tot C&C</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px">
+        <div style="font-family:'Lora',serif;font-size:22px;color:var(--text)" id="hero-streak">—</div>
+        <div style="font-size:11px;color:var(--muted)">kaartjes vandaag</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px">
+        <div style="font-family:'Lora',serif;font-size:22px;color:var(--text)" id="hero-mastered">—</div>
+        <div style="font-size:11px;color:var(--muted)">% beheerst</div>
+      </div>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" id="s-total">—</div><div class="stat-lbl">Flashcards totaal</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-done">—</div><div class="stat-lbl">Geoefend</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-pct">—</div><div class="stat-lbl">Gemiddeld goed</div></div>
+    <div class="stat-card"><div class="stat-num" id="s-days">—</div><div class="stat-lbl">Dagen tot DC</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+    <div class="card"><div class="card-title">Vandaag beginnen</div><div id="dash-today"><div class="loading-row"><div class="spinner"></div>Laden...</div></div></div>
+    <div class="card"><div class="card-title">Herhalen aanbevolen</div><div id="dash-repeat"><div class="loading-row"><div class="spinner"></div>Laden...</div></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:3fr 2fr;gap:1rem">
+    <div class="card"><div class="card-title">Voortgang per thema</div><div id="dash-topics"><div class="loading-row"><div class="spinner"></div>Laden...</div></div></div>
+    <div class="card"><div class="card-title">Snel oefenen</div><div style="display:flex;flex-direction:column;gap:8px"><button class="btn btn-dc" onclick="quickQuiz('DC')">Digital Crime → 10 vragen</button><button class="btn btn-cc" onclick="quickQuiz('CC')">C&C → 10 vragen</button><button class="btn" onclick="showTab('essay')" style="font-size:12.5px">Essay oefenen voor C&C →</button><button class="btn" onclick="showTab('tutor')" style="font-size:12.5px">Stel een vraag aan AI-tutor →</button></div></div>
+  </div>
+</div>
+
+<!-- STUDIEPLAN -->
+<div id="tab-plan" style="display:none">
+  <div class="page-header"><div class="page-title">Studieplan</div><div class="page-sub">Wat je vandaag moet doen en wat er nog ontbreekt</div></div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1rem">
+    <div class="card"><div class="card-title">Vandaag te doen</div><div id="plan-today"><div class="loading-row"><div class="spinner"></div>Laden...</div></div></div>
+    <div class="card">
+      <div class="card-title">Tentamens</div>
+      <div style="font-size:13px;margin-bottom:0.875rem"><div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span class="tag tag-dc">DC</span><span id="plan-days-dc" style="color:var(--muted)">—</span></div><div style="display:flex;justify-content:space-between;padding:6px 0"><span class="tag tag-cc">C&C</span><span id="plan-days-cc" style="color:var(--muted)">—</span></div></div>
+      <div class="card-title">Tip van de dag</div>
+      <div id="plan-tip" style="font-size:13px;color:var(--muted);line-height:1.6"></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">Geüpload materiaal</div><div id="plan-weeks"><div class="loading-row"><div class="spinner"></div>Laden...</div></div></div>
+</div>
+
+<!-- UPLOAD -->
+<div id="tab-upload" style="display:none">
+  <div class="page-header"><div class="page-title">Materiaal uploaden</div><div class="page-sub">Slides, readings of wetenschappelijke artikelen — ik maak er 20 flashcards van</div></div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:1rem">
+      <select id="up-vak"><option value="">Kies vak...</option><option value="DC">Digital Crime (DC)</option><option value="CC">Conflict & Cooperation (C&C)</option></select>
+      <input type="text" id="up-week" placeholder="Week / thema (bijv. Week 3 — Ransomware)"/>
+      <select id="up-type"><option value="slides">College slides</option><option value="artikel">Wetenschappelijk artikel</option><option value="reader">Reader / samenvatting</option></select>
+    </div>
+    <div class="upload-zone" id="dropzone" onclick="document.getElementById('fileInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+      <div style="font-size:24px;margin-bottom:6px;opacity:0.4">⬆</div>
+      <div style="font-weight:500;font-size:14px">Klik of sleep een bestand hierheen</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-top:3px">.pdf, .txt, .md — of plak tekst hieronder</div>
+    </div>
+    <input type="file" id="fileInput" accept=".txt,.md,.pdf" style="display:none" onchange="handleFile(event)"/>
+    <textarea id="up-text" placeholder="Of plak hier je aantekeningen, artikel of samenvatting..." style="margin-top:10px"></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+      <button class="btn" id="sum-btn" onclick="generateSummary()">AI-samenvatting maken</button>
+      <button class="btn btn-primary" id="gen-btn" onclick="generateCards()">Genereer 20 flashcards →</button>
+    </div>
+    <div id="gen-loading" class="loading-row" style="display:none"><div class="spinner"></div>Flashcards genereren via AI...</div>
+    <div id="summary-result" style="display:none;margin-top:1rem"><div class="card-title">AI-samenvatting</div><div class="summary-box" id="summary-text"></div></div>
+  </div>
+</div>
+
+<!-- FLASHCARDS -->
+<div id="tab-cards" style="display:none">
+  <div class="page-header"><div class="page-title">Flashcards</div><div class="page-sub">Klik op een vraag voor het antwoord · gebruik 🇳🇱 voor uitleg in het Nederlands</div></div>
+  <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+    <select id="f-vak" onchange="loadCards()" style="width:auto;flex:none"><option value="">Alle vakken</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
+    <select id="f-week" onchange="loadCards()" style="width:auto;flex:none"><option value="">Alle thema's</option></select>
+    <select id="f-type" onchange="loadCards()" style="width:auto;flex:none"><option value="">Alle typen</option><option value="slides">Slides</option><option value="artikel">Artikel</option><option value="reader">Reader</option></select>
+    <button class="btn btn-sm" onclick="loadCards()">↺ Vernieuwen</button>
+  </div>
+  <div id="cards-grid"><div class="loading-row"><div class="spinner"></div>Laden...</div></div>
+</div>
+
+<!-- QUIZ -->
+<div id="tab-quiz" style="display:none">
+  <div class="page-header"><div class="page-title">Overhoren</div><div class="page-sub">Kies hoe je wil oefenen</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div>
+      <div id="quiz-setup" class="card">
+        <div class="card-title">Modus kiezen</div>
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="mode-type" onclick="setMode('type')">✍ Antwoord typen<br/><span style="font-size:11px;opacity:0.7">AI geeft feedback</span></button>
+          <button class="mode-btn" id="mode-anki" onclick="setMode('anki')">🧠 Zelf beoordelen<br/><span style="font-size:11px;opacity:0.7">Denk na → spatie → 1-5</span></button>
+        </div>
+        <select id="q-vak" style="margin-bottom:0.5rem" onchange="loadQuizWeeks()"><option value="">Beide vakken</option><option value="DC">Alleen Digital Crime</option><option value="CC">Alleen C&C</option></select>
+        <select id="q-week" style="margin-bottom:1rem"><option value="">Alle lectures</option></select>
+        <div class="card-title">Volgorde</div>
+        <div style="display:flex;gap:8px;margin-bottom:1rem">
+          <button class="btn btn-sm active" id="order-random" style="flex:1;background:var(--text);color:#fff;border-color:var(--text)" onclick="setOrder('random',this)">Door elkaar</button>
+          <button class="btn btn-sm" id="order-prog" style="flex:1" onclick="setOrder('progressive',this)">Progressief (1→20)</button>
+        </div>
+        <div class="card-title">Beschikbare tijd</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1.25rem">
+          <button class="btn btn-sm" style="background:var(--text);color:#fff;border-color:var(--text)" data-min="15" onclick="setTime(this)">15 min</button>
+          <button class="btn btn-sm" data-min="30" onclick="setTime(this)">30 min</button>
+          <button class="btn btn-sm" data-min="60" onclick="setTime(this)">1 uur</button>
+          <button class="btn btn-sm" data-min="0" onclick="setTime(this)">Alles</button>
+        </div>
+        <button class="btn btn-primary" onclick="startQuiz()">Start sessie →</button>
+      </div>
+      <div id="quiz-play" style="display:none"></div>
+    </div>
+    <!-- Quiz sidebar: tips -->
+    <div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-title">Studietips</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.7">
+          <div style="padding:6px 0;border-bottom:1px solid var(--border)"><strong style="color:var(--text)">Typen</strong> — Beste voor diepe kennis. De AI geeft feedback op wat je mist.</div>
+          <div style="padding:6px 0;border-bottom:1px solid var(--border)"><strong style="color:var(--text)">Zelf beoordelen</strong> — Sneller, goed voor herhalen. Druk op spatie om het antwoord te zien.</div>
+          <div style="padding:6px 0"><strong style="color:var(--text)">Spaced repetition</strong> — Kaartjes die je slecht kende komen vaker terug dan kaartjes die je goed kende.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Voortgang deze sessie</div>
+        <div id="quiz-live-stats" style="font-size:13px;color:var(--muted)">Nog geen sessie gestart.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ESSAY -->
+<div id="tab-essay" style="display:none">
+  <div class="page-header"><div class="page-title">Essay oefenen</div><div class="page-sub">Schrijf een oefenessay en krijg gedetailleerde feedback — speciaal voor C&C (70%!)</div></div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:1rem">
+      <input type="text" id="essay-vraag" placeholder="Essayvraag — of laat de AI er een genereren →"/>
+      <select id="essay-vak"><option value="CC">Conflict & Cooperation (C&C)</option><option value="DC">Digital Crime (DC)</option></select>
+    </div>
+    <textarea id="essay-text" class="essay-area" placeholder="Schrijf hier je essay... (minimaal een paar alinea's voor goede feedback)"></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+      <button class="btn" onclick="generateEssayQuestion()">Genereer oefenvraag ↗</button>
+      <button class="btn btn-primary" id="essay-btn" onclick="submitEssay()">Beoordeel mijn essay →</button>
+    </div>
+    <div id="essay-loading" class="loading-row" style="display:none"><div class="spinner"></div>Essay beoordelen...</div>
+    <div id="essay-result"></div>
+  </div>
+</div>
+
+<!-- AI TUTOR -->
+<div id="tab-tutor" style="display:none">
+  <div class="page-header"><div class="page-title">AI-tutor</div><div class="page-sub">Stel vragen over je studiemateriaal — antwoorden zijn gebaseerd op jouw flashcards</div></div>
+  <div style="display:grid;grid-template-columns:3fr 1fr;gap:1rem">
+    <div>
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-msg ai">Hoi Anne! Ik ben je AI-tutor. Ik kan je helpen met vragen over je studiemateriaal voor Digital Crime en Conflict & Cooperation in Cyberspace. Stel gerust een vraag — in het Nederlands of Engels, zoals je wil! 😊<div class="chat-source">Gebaseerd op jouw geüploade flashcards</div></div>
+        </div>
+        <div class="chat-input-row">
+          <select id="tutor-vak" style="width:auto;flex:none"><option value="">Beide vakken</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
+          <input type="text" id="chat-input" placeholder="Stel een vraag over je studiestof..." onkeydown="if(event.key==='Enter')sendChat()"/>
+          <button class="btn btn-primary" onclick="sendChat()">Stuur →</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-title">Voorbeeldvragen</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn btn-sm" style="text-align:left;justify-content:flex-start;white-space:normal;height:auto;padding:8px 10px" onclick="askExample('Kun je uitleggen wat het verschil is tussen cybercrime en cyber-enabled crime?')">Wat is het verschil tussen cybercrime en cyber-enabled crime?</button>
+          <button class="btn btn-sm" style="text-align:left;justify-content:flex-start;white-space:normal;height:auto;padding:8px 10px" onclick="askExample('Leg uit wat de belangrijkste theorieën zijn over samenwerking in cyberspace')">Theorieën over samenwerking in cyberspace?</button>
+          <button class="btn btn-sm" style="text-align:left;justify-content:flex-start;white-space:normal;height:auto;padding:8px 10px" onclick="askExample('Wat moet ik weten voor de essayvraag bij C&C?')">Wat moet ik weten voor de essayvraag?</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Taal</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6">Je kunt in het <strong style="color:var(--text)">Nederlands</strong> of <strong style="color:var(--text)">Engels</strong> vragen stellen. De tutor antwoordt in dezelfde taal als jouw vraag.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AANTEKENINGEN -->
+<div id="tab-notes" style="display:none">
+  <div class="page-header"><div class="page-title">Aantekeningen</div><div class="page-sub">Notities per vak en week — altijd opgeslagen</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-title">Nieuwe aantekening</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0.875rem">
+          <select id="note-vak"><option value="">Kies vak...</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
+          <input type="text" id="note-week" placeholder="Week / thema"/>
+        </div>
+        <textarea id="note-text" placeholder="Schrijf hier je aantekening..." style="min-height:130px"></textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button id="note-save-btn" class="btn btn-primary" onclick="saveNote()">Opslaan →</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex;gap:8px;margin-bottom:0.875rem">
+        <select id="notes-filter-vak" onchange="loadNotes()" style="flex:1"><option value="">Alle vakken</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
+        <button class="btn btn-sm" onclick="loadNotes()">↺</button>
+      </div>
+      <div id="notes-list"><div class="loading-row"><div class="spinner"></div>Laden...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- VOORTGANG -->
+<div id="tab-progress" style="display:none">
+  <div class="page-header"><div class="page-title">Voortgang</div><div class="page-sub">Wat je beheerst en wat je nog moet herhalen</div></div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" id="p-total">—</div><div class="stat-lbl">Flashcards totaal</div></div>
+    <div class="stat-card"><div class="stat-num" id="p-done">—</div><div class="stat-lbl">Geoefend</div></div>
+    <div class="stat-card"><div class="stat-num" id="p-good">—</div><div class="stat-lbl">Gemiddeld goed</div></div>
+    <div class="stat-card"><div class="stat-num" id="p-sessions">—</div><div class="stat-lbl">Oefensessies</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div class="card"><div class="card-title">Per thema</div><div id="p-topics"><div class="loading-row"><div class="spinner"></div></div></div></div>
+    <div class="card"><div class="card-title">Aanbevolen herhalen</div><div id="p-repeat"><div class="loading-row"><div class="spinner"></div></div></div></div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="tab-setup" style="display:none">
+  <div class="page-header"><div class="page-title">Setup</div><div class="page-sub">Database en verbinding</div></div>
+  <div class="card">
+    <div class="card-title">SQL-scripts (eenmalig uitvoeren in Supabase)</div>
+    <div class="sql-box">-- Tabellen aanmaken
+CREATE TABLE IF NOT EXISTS flashcards (
+  id BIGSERIAL PRIMARY KEY, vak TEXT NOT NULL, week TEXT NOT NULL,
+  theme TEXT NOT NULL, question TEXT NOT NULL, answer TEXT NOT NULL,
+  mat_type TEXT DEFAULT 'slides', practiced INT DEFAULT 0,
+  correct INT DEFAULT 0, last_rating INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS quiz_sessions (
+  id BIGSERIAL PRIMARY KEY, total INT NOT NULL, correct INT NOT NULL,
+  vak TEXT, mode TEXT DEFAULT 'type', created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS notes (
+  id BIGSERIAL PRIMARY KEY, vak TEXT, week TEXT,
+  content TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- Beveiliging
+ALTER TABLE flashcards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_flashcards" ON flashcards;
+DROP POLICY IF EXISTS "allow_all_sessions" ON quiz_sessions;
+DROP POLICY IF EXISTS "allow_all_notes" ON notes;
+CREATE POLICY "allow_all_flashcards" ON flashcards FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all_sessions" ON quiz_sessions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "allow_all_notes" ON notes FOR ALL USING (true) WITH CHECK (true);</div>
+    <button class="btn btn-primary" style="margin-top:1rem" onclick="testConnection()">Test verbinding →</button>
+    <div id="conn-result" style="margin-top:10px;font-size:13px"></div>
+  </div>
+  <div class="card" style="margin-top:1rem">
+    <div class="card-title">Status</div>
+    <div style="font-size:13px;color:var(--muted)"><strong style="color:var(--text)">Verbinding:</strong> <span id="conn-status">Controleren...</span></div>
+  </div>
+  <div class="card" style="margin-top:1rem">
+    <div class="card-title">Gevaarlijke zone</div>
+    <button class="btn btn-danger" onclick="deleteAll()">Alle flashcards verwijderen</button>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script type="module">
+const SUPABASE_URL=import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY=import.meta.env.VITE_SUPABASE_KEY;
+const ANTHROPIC_KEY=import.meta.env.VITE_ANTHROPIC_KEY;
+const AH={'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let quizMode='type',selectedTime=15,quizSession={cards:[],idx:0,answered:false,correct:0};
+let chatHistory=[];
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+let ai=async function(prompt,maxT=1200){const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:AH,body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxT,messages:[{role:'user',content:prompt}]})});const d=await r.json();if(d.error)throw new Error(d.error.message);return d.content.map(x=>x.text||'').join('');}
+async function aiChat(messages,sys,maxT=800){const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:AH,body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxT,system:sys,messages})});const d=await r.json();if(d.error)throw new Error(d.error.message);return d.content.map(x=>x.text||'').join('');}
+function parseJSON(raw){return JSON.parse(raw.replace(/```json|```/g,'').trim());}
+function scoreLabel(practiced,correct){if(!practiced)return{text:'Nog niet geoefend',cls:'fc-score-none'};const p=Math.round(correct/practiced*100);if(p>=70)return{text:`${p}% goed`,cls:'fc-score-good'};if(p>=40)return{text:`${p}% goed`,cls:'fc-score-ok'};return{text:`${p}% goed — herhalen!`,cls:'fc-score-bad'};}
+
+function updateCountdowns(){
+  const now=new Date(),dc=new Date('2026-05-26T15:00:00'),cc=new Date('2026-05-28T09:00:00');
+  const dDC=Math.ceil((dc-now)/86400000),dCC=Math.ceil((cc-now)/86400000);
+  ['countdown-dc','plan-days-dc'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=dDC>0?`Nog ${dDC} dagen`:'Vandaag!';});
+  ['countdown-cc','plan-days-cc'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=dCC>0?`Nog ${dCC} dagen`:'Vandaag!';});
+  const s=document.getElementById('s-days');if(s)s.textContent=Math.max(0,dDC);
+}
+updateCountdowns();
+
+const TABS=['dashboard','plan','upload','cards','quiz','essay','tutor','notes','progress','setup'];
+function showTab(name){
+  TABS.forEach(t=>document.getElementById('tab-'+t).style.display=t===name?'block':'none');
+  document.querySelectorAll('.nav-item').forEach((btn,i)=>btn.classList.toggle('active',i===TABS.indexOf(name)));
+  if(name==='dashboard')loadDashboard();if(name==='cards')loadCards();if(name==='progress')loadProgress();if(name==='plan')loadPlan();if(name==='setup')checkConnection();if(name==='notes')loadNotes();if(name==='quiz')loadQuizWeeks();
+}
+
+// ── Dashboard ──
+async function loadDashboard(){
+  const{data:cards}=await sb.from('flashcards').select('*');
+  if(!cards)return;
+  const practiced=cards.filter(c=>c.practiced>0);
+  const goodPct=practiced.length?Math.round(practiced.reduce((a,c)=>a+c.correct/c.practiced,0)/practiced.length*100):0;
+  document.getElementById('s-total').textContent=cards.length;
+  document.getElementById('s-done').textContent=practiced.length;
+  document.getElementById('s-pct').textContent=goodPct+'%';const hm=document.getElementById('hero-mastered');if(hm)hm.textContent=goodPct;
+  updateCountdowns();renderTopicBars('dash-topics',cards);
+  const weak=cards.filter(c=>c.practiced===0||c.correct/c.practiced<0.6);
+  const daysLeft=Math.ceil((new Date('2026-05-26')-new Date())/86400000);
+  let todayHtml='';
+  if(cards.length===0){todayHtml='<div style="font-size:13px;color:var(--muted)">Upload eerst studiemateriaal 👆</div><button class="btn btn-primary" style="margin-top:10px" onclick="showTab(\'upload\')">Ga naar uploaden →</button>';}
+  else{
+    if(weak.filter(c=>c.vak==='CC').length>0)todayHtml+=`<div class="plan-task"><input type="checkbox" onchange="this.parentElement.style.opacity=this.checked?0.4:1"/><div><strong>C&C flashcards oefenen</strong><div style="font-size:12px;color:var(--muted)">${weak.filter(c=>c.vak==='CC').length} kaartjes nog niet goed beheerst</div></div></div>`;
+    if(weak.filter(c=>c.vak==='DC').length>0)todayHtml+=`<div class="plan-task"><input type="checkbox" onchange="this.parentElement.style.opacity=this.checked?0.4:1"/><div><strong>DC flashcards oefenen</strong><div style="font-size:12px;color:var(--muted)">${weak.filter(c=>c.vak==='DC').length} kaartjes</div></div></div>`;
+    if(daysLeft<21)todayHtml+=`<div class="plan-task"><input type="checkbox" onchange="this.parentElement.style.opacity=this.checked?0.4:1"/><div><strong>Essay oefenen (C&C)</strong><div style="font-size:12px;color:var(--muted)">Nog ${daysLeft} dagen</div></div></div>`;
+    todayHtml+=`<button class="btn btn-primary" style="margin-top:10px" onclick="showTab('quiz')">Nu oefenen →</button>`;
+  }
+  document.getElementById('dash-today').innerHTML=todayHtml;
+  const repeatCards=cards.filter(c=>c.practiced>0&&c.correct/c.practiced<0.5).slice(0,4);
+  document.getElementById('dash-repeat').innerHTML=repeatCards.length?repeatCards.map(c=>`<div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}" style="margin-right:6px">${c.vak}</span>${c.question.slice(0,55)}…</div>`).join(''):'<div style="font-size:13px;color:var(--muted)">Geen zwakke punten — goed bezig!</div>';
+}
+function renderTopicBars(targetId,cards){
+  const themes={};cards.forEach(c=>{const k=c.vak+'::'+c.theme;if(!themes[k])themes[k]={vak:c.vak,theme:c.theme,total:0,practiced:0,correct:0};themes[k].total++;themes[k].practiced+=c.practiced;themes[k].correct+=c.correct;});
+  const el=document.getElementById(targetId);
+  if(!Object.keys(themes).length){el.innerHTML='<div style="font-size:13px;color:var(--muted)">Nog geen flashcards.</div>';return;}
+  el.innerHTML=Object.values(themes).map(t=>{const pct=t.practiced>0?Math.round(t.correct/t.practiced*100):0;const color=t.vak==='CC'?'var(--cc)':'var(--dc)';return`<div class="topic-row"><span class="tag tag-${t.vak==='CC'?'cc':'dc'}" style="width:34px;justify-content:center">${t.vak}</span><span style="flex:1;font-size:13px">${t.theme}</span><div class="topic-bar-bg"><div class="topic-bar" style="width:${pct}%;background:${color}"></div></div><span style="width:34px;text-align:right;font-size:12px;color:var(--muted)">${pct}%</span></div>`;}).join('');
+}
+
+// ── Plan ──
+async function loadPlan(){
+  updateCountdowns();
+  const{data:cards}=await sb.from('flashcards').select('vak,week,mat_type').order('week');
+  const daysLeft=Math.ceil((new Date('2026-05-26')-new Date())/86400000);
+  const tips=['Wissel af tussen vakken zodat je beide goed beheerst.','Doe korte sessies van 20-30 min. Na een pauze onthoud je stof beter.','De essayvraag bij C&C is cruciaal. Oefen vandaag een essay.','Upload je readings als apart materiaal zodat de flashcards ook de literatuur dekken.','Herhaal kaartjes die je fout had als eerste — daar zit de meeste winst.'];
+  document.getElementById('plan-tip').textContent=tips[new Date().getDay()%tips.length];
+  let todayHtml=`<div class="plan-task"><input type="checkbox" onchange="this.parentElement.style.opacity=this.checked?0.4:1"/><div><strong>Oefen 15 minuten flashcards</strong><div style="font-size:12px;color:var(--muted)">Begin met het vak waar je het minst zeker van bent</div></div></div>`;
+  if(daysLeft<21)todayHtml+=`<div class="plan-task"><input type="checkbox" onchange="this.parentElement.style.opacity=this.checked?0.4:1"/><div><strong>Schrijf een oefenessay (C&C)</strong><div style="font-size:12px;color:var(--muted)">Gebruik de Essay-tab</div></div></div>`;
+  todayHtml+=`<div class="plan-task"><input type="checkbox" onchange="this.parentElement.style.opacity=this.checked?0.4:1"/><div><strong>Upload nieuw materiaal</strong><div style="font-size:12px;color:var(--muted)">Slides of artikel</div></div></div>`;
+  document.getElementById('plan-today').innerHTML=todayHtml;
+  if(!cards||!cards.length){document.getElementById('plan-weeks').innerHTML='<div class="empty">Nog geen materiaal geüpload.</div>';return;}
+  const uploaded={};cards.forEach(c=>{const k=c.vak+'::'+c.week;if(!uploaded[k])uploaded[k]={vak:c.vak,week:c.week,types:[]};if(!uploaded[k].types.includes(c.mat_type))uploaded[k].types.push(c.mat_type);});
+  document.getElementById('plan-weeks').innerHTML=Object.values(uploaded).map(w=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)"><span class="tag tag-${w.vak==='CC'?'cc':'dc'}">${w.vak}</span><span style="flex:1;font-size:13px">${w.week}</span>${w.types.map(t=>`<span class="tag" style="background:var(--bg2);color:var(--muted)">${t}</span>`).join('')}<span style="font-size:12px;color:var(--green)">✓</span></div>`).join('');
+}
+
+// ── Upload ──
+function dragOver(e){e.preventDefault();document.getElementById('dropzone').classList.add('drag');}
+function dragLeave(){document.getElementById('dropzone').classList.remove('drag');}
+function dropFile(e){e.preventDefault();dragLeave();const file=e.dataTransfer.files[0];if(file)readFile(file);}
+function handleFile(e){if(e.target.files[0])readFile(e.target.files[0]);}
+async function readFile(file){if(file.type==='application/pdf'||file.name.endsWith('.pdf')){await readPDF(file);}else{const r=new FileReader();r.onload=e=>document.getElementById('up-text').value=e.target.result;r.readAsText(file);}}
+async function readPDF(file){
+  const ta=document.getElementById('up-text');ta.value='PDF wordt ingelezen...';
+  try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text='';for(let i=1;i<=Math.min(pdf.numPages,50);i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(x=>x.str).join(' ')+'\n';}
+  ta.value=text.trim().length<50?'Geen leesbare tekst gevonden (scan?).':text.trim();if(text.trim().length>50)toast(`PDF ingelezen — ${pdf.numPages} pagina's`);}catch(err){ta.value='PDF fout: '+err.message;}
+}
+async function generateCards(){
+  const vak=document.getElementById('up-vak').value,week=document.getElementById('up-week').value.trim(),text=document.getElementById('up-text').value.trim(),matType=document.getElementById('up-type').value;
+  if(!vak){toast('Kies eerst een vak.');return;}if(!text){toast('Voeg tekst toe.');return;}
+  document.getElementById('gen-loading').style.display='flex';document.getElementById('gen-btn').disabled=true;
+  const prompt=`You are a study coach for a Master's student in Crisis & Security Management at Leiden University.
+Course: ${vak==='DC'?'Digital Crime (DC)':'Conflict & Cooperation in Cyberspace (C&C)'}. Week/theme: ${week||'unspecified'}. Material type: ${matType}.
+Generate exactly 20 flashcards. Return ONLY a valid JSON array, no markdown:
+[{"q":"...","a":"...","theme":"Short theme label"}]
+Rules:
+- Language: English only
+- Answers: clear and concise, 1-3 short sentences. Write like explaining to a smart friend.
+- Vary types: definitions, causes, consequences, comparisons, examples${matType==='artikel'?', author arguments, key findings':''}
+- For C&C include 3+ analytical questions (e.g. "How would you argue that...?")
+- Stay faithful to the source material only
+- Do not repeat concepts, cover broadly
+- Short "theme" label per group (2-4 words)
+Material:\n${text.slice(0,8000)}`;
+  try{const raw=await ai(prompt,2500);const parsed=parseJSON(raw);const rows=parsed.map(c=>({vak,week:week||'Onbekend',theme:c.theme||week||'Algemeen',question:c.q,answer:c.a,mat_type:matType}));const{error}=await sb.from('flashcards').insert(rows);if(error)throw new Error(error.message);toast(`✓ ${rows.length} flashcards opgeslagen!`);document.getElementById('up-text').value='';document.getElementById('up-week').value='';showTab('cards');}
+  catch(err){toast('Fout: '+err.message);}
+  finally{document.getElementById('gen-loading').style.display='none';document.getElementById('gen-btn').disabled=false;}
+}
+async function generateSummary(){
+  const text=document.getElementById('up-text').value.trim(),vak=document.getElementById('up-vak').value,week=document.getElementById('up-week').value;
+  if(!text){toast('Voeg eerst tekst toe.');return;}
+  document.getElementById('sum-btn').disabled=true;document.getElementById('sum-btn').textContent='Bezig...';
+  try{const raw=await ai(`Maak een beknopte studiesamenvatting in het Nederlands van dit materiaal voor ${vak||'onbekend'} (${week||''}). Gebruik kopjes per thema. Max 400 woorden.\n${text.slice(0,6000)}`,800);document.getElementById('summary-text').textContent=raw;document.getElementById('summary-result').style.display='block';}
+  catch(e){toast('Fout: '+e.message);}finally{document.getElementById('sum-btn').disabled=false;document.getElementById('sum-btn').textContent='AI-samenvatting maken';}
+}
+
+// ── Flashcards ──
+async function loadCards(){
+  const vf=document.getElementById('f-vak').value,wf=document.getElementById('f-week').value,tf=document.getElementById('f-type').value;
+  let q=sb.from('flashcards').select('*').order('created_at',{ascending:false});
+  if(vf)q=q.eq('vak',vf);if(wf)q=q.eq('week',wf);if(tf)q=q.eq('mat_type',tf);
+  const{data:cards}=await q;
+  const{data:all}=await sb.from('flashcards').select('week').order('week');
+  if(all){const weeks=[...new Set(all.map(c=>c.week))];const sel=document.getElementById('f-week');const cur=sel.value;sel.innerHTML='<option value="">Alle thema\'s</option>'+weeks.map(w=>`<option value="${w}"${w===cur?' selected':''}>${w}</option>`).join('');}
+  const grid=document.getElementById('cards-grid');
+  if(!cards||!cards.length){grid.innerHTML='<div class="empty">Geen flashcards gevonden voor deze filter.</div>';return;}
+  // Store cards globally for edit access
+  window._cards=cards;
+  const sc=c=>{const s=scoreLabel(c.practiced,c.correct);return`<span class="fc-score ${s.cls}">${s.text}</span>`;};
+  grid.innerHTML=`<div class="fc-grid">${cards.map((c,i)=>`
+    <div class="flashcard" id="fc-${c.id}">
+      <div class="fc-meta"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span>${c.mat_type==='artikel'?'<span class="tag" style="background:#FDF4E7;color:#92400E">artikel</span>':''}<span style="font-size:11px;color:var(--muted)">${c.week} · ${c.theme}</span></div>
+      <div class="fc-q" onclick="document.getElementById('fca-${c.id}').classList.toggle('open')">${c.question}</div>
+      <div class="fc-a" id="fca-${c.id}">${c.answer}</div>
+      <div class="fc-nl" id="fcnl-${c.id}"></div>
+      <div class="fc-actions">
+        <button class="btn btn-sm" onclick="editCard(${c.id})">Bewerken</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteCard(${c.id})">Verwijderen</button>
+        <button class="btn-nl btn" onclick="explainNL(${c.id})">Uitleg</button>
+        <div style="margin-left:auto">${sc(c)}</div>
+      </div>
+    </div>`).join('')}</div>`;
+}
+function editCard(id){const c=window._cards.find(x=>x.id===id);if(!c)return;document.getElementById('edit-id').value=id;document.getElementById('edit-q').value=c.question;document.getElementById('edit-a').value=c.answer;document.getElementById('edit-modal').classList.add('open');}
+function closeModal(){document.getElementById('edit-modal').classList.remove('open');}
+async function saveEdit(){const id=document.getElementById('edit-id').value,q=document.getElementById('edit-q').value.trim(),a=document.getElementById('edit-a').value.trim();if(!q||!a){toast('Vul beide velden in.');return;}await sb.from('flashcards').update({question:q,answer:a}).eq('id',id);closeModal();toast('Bijgewerkt!');loadCards();}
+async function deleteCard(id){if(!confirm('Deze flashcard verwijderen?'))return;await sb.from('flashcards').delete().eq('id',id);toast('Verwijderd.');loadCards();}
+async function explainNL(id){
+  const c=window._cards.find(x=>x.id===id);if(!c)return;
+  const nlEl=document.getElementById('fcnl-'+id);
+  if(nlEl.classList.contains('open')){nlEl.classList.remove('open');return;}
+  nlEl.textContent='Uitleg laden...';nlEl.classList.add('open');
+  try{const raw=await ai(`Leg het volgende concept uit in het Nederlands, op een begrijpelijke manier voor een masterstudent. Houd het kort (2-4 zinnen) en gebruik geen onnodig jargon.\n\nConcept: ${c.question}\nAntwoord: ${c.answer}`,300);nlEl.textContent=raw;}
+  catch(e){nlEl.textContent='Fout: '+e.message;}
+}
+
+// ── Quiz ──
+function setMode(m){quizMode=m;document.getElementById('mode-type').classList.toggle('active',m==='type');document.getElementById('mode-anki').classList.toggle('active',m==='anki');}
+function setTime(btn){document.querySelectorAll('[data-min]').forEach(b=>{b.style.background='';b.style.color='';b.style.borderColor='';});btn.style.background='var(--text)';btn.style.color='#fff';btn.style.borderColor='var(--text)';selectedTime=parseInt(btn.dataset.min);}
+function quickQuiz(vak){document.getElementById('q-vak').value=vak;showTab('quiz');setTimeout(startQuiz,150);}
+function updateLiveStats(){document.getElementById('quiz-live-stats').innerHTML=`<div style="display:flex;gap:16px"><div><div style="font-size:20px;font-weight:500">${quizSession.correct}</div><div style="color:var(--muted)">Goed</div></div><div><div style="font-size:20px;font-weight:500">${quizSession.idx}</div><div style="color:var(--muted)">Gedaan</div></div><div><div style="font-size:20px;font-weight:500">${quizSession.cards.length}</div><div style="color:var(--muted)">Totaal</div></div></div>`;}
+
+let quizOrder='random';
+
+function setOrder(order,btn){
+  quizOrder=order;
+  document.getElementById('order-random').style.background='';
+  document.getElementById('order-random').style.color='';
+  document.getElementById('order-random').style.borderColor='';
+  document.getElementById('order-prog').style.background='';
+  document.getElementById('order-prog').style.color='';
+  document.getElementById('order-prog').style.borderColor='';
+  btn.style.background='var(--text)';btn.style.color='#fff';btn.style.borderColor='var(--text)';
+}
+
+async function loadQuizWeeks(){
+  const vak=document.getElementById('q-vak').value;
+  let q=sb.from('flashcards').select('week').order('week');
+  if(vak)q=q.eq('vak',vak);
+  const{data}=await q;
+  const sel=document.getElementById('q-week');
+  sel.innerHTML='<option value="">Alle lectures</option>';
+  if(data){
+    const weeks=[...new Set(data.map(r=>r.week))];
+    weeks.forEach(w=>{const o=document.createElement('option');o.value=w;o.textContent=w;sel.appendChild(o);});
+  }
+}
+
+async function startQuiz(){
+  const vak=document.getElementById('q-vak').value;
+  const week=document.getElementById('q-week').value;
+  let q=sb.from('flashcards').select('*');
+  if(vak)q=q.eq('vak',vak);
+  if(week)q=q.eq('week',week);
+  const{data:cards}=await q;
+  if(!cards||!cards.length){toast('Geen flashcards. Upload eerst materiaal.');return;}
+
+  let pool;
+  if(quizOrder==='progressive'){
+    // Sort by created_at ascending = lecture order
+    pool=[...cards].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  } else {
+    // Spaced repetition shuffle
+    function getWeight(card){
+      if(card.practiced===0)return 3;
+      const r=card.last_rating||0;
+      if(r===1)return 6;if(r===2)return 4;if(r===3)return 2;if(r===4)return 1;if(r===5)return 0.3;
+      const score=card.correct/card.practiced;
+      return score<0.4?5:score<0.7?2:1;
+    }
+    let weighted=[];
+    cards.forEach(card=>{const w=Math.ceil(getWeight(card));for(let i=0;i<w;i++)weighted.push(card);});
+    for(let i=weighted.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[weighted[i],weighted[j]]=[weighted[j],weighted[i]];}
+    const seen=new Set();pool=[];
+    weighted.forEach(c=>{if(!seen.has(c.id)){seen.add(c.id);pool.push(c);}});
+  }
+
+  const count=selectedTime===0?pool.length:Math.max(1,Math.min(Math.floor(selectedTime/2.5),pool.length));
+  quizSession={cards:pool.slice(0,count),idx:0,answered:false,correct:0,vak};
+  document.getElementById('quiz-setup').style.display='none';document.getElementById('quiz-play').style.display='block';
+  updateLiveStats();renderQuestion();
+}
+function renderQuestion(){const{cards,idx}=quizSession;if(idx>=cards.length){showResult();return;}const c=cards[idx],pct=Math.round(idx/cards.length*100);if(quizMode==='anki')renderAnki(c,pct);else renderType(c,pct);}
+function renderType(c,pct){
+  document.getElementById('quiz-play').innerHTML=`<div class="quiz-wrap"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div style="font-size:12px;color:var(--muted);text-align:right;margin-bottom:1rem">${quizSession.idx+1} / ${quizSession.cards.length}</div><div class="quiz-card"><div style="display:flex;gap:6px"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="font-size:12px;color:var(--muted)">${c.week} · ${c.theme}</span></div><div class="quiz-q">${c.question}</div><textarea id="ans" placeholder="Typ je antwoord hier..."></textarea><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" onclick="skipQ()">Overslaan</button><button class="btn btn-primary" onclick="submitType()">Controleer →</button></div><div id="fb"></div></div></div>`;
+}
+function renderAnki(c,pct){
+  document.getElementById('quiz-play').innerHTML=`<div class="quiz-wrap"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div style="font-size:12px;color:var(--muted);text-align:right;margin-bottom:1rem">${quizSession.idx+1} / ${quizSession.cards.length}</div><div class="quiz-card"><div style="display:flex;gap:6px"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="font-size:12px;color:var(--muted)">${c.week} · ${c.theme}</span></div><div class="quiz-q">${c.question}</div><div class="anki-hint">Denk na over het antwoord, druk dan op <strong>spatie</strong> om het te onthullen</div><div class="anki-answer" id="anki-ans">${c.answer}</div><div id="anki-rating" style="display:none"><div style="display:flex;justify-content:center;margin:1rem 0 0.5rem"><button class="btn btn-nl" onclick="quizExplainNL(${c.id})">Uitleg in NL</button></div><div id="quiz-nl-${c.id}"></div><div style="font-size:12.5px;color:var(--muted);text-align:center;margin:0.5rem 0">Hoe goed kende je dit?</div><div class="rating-row"><button class="rating-btn r1" onclick="rateAnki(1,${c.id})">1<span class="rating-label">Wist ik niet</span></button><button class="rating-btn r2" onclick="rateAnki(2,${c.id})">2<span class="rating-label">Nauwelijks</span></button><button class="rating-btn r3" onclick="rateAnki(3,${c.id})">3<span class="rating-label">Beetje</span></button><button class="rating-btn r4" onclick="rateAnki(4,${c.id})">4<span class="rating-label">Goed</span></button><button class="rating-btn r5" onclick="rateAnki(5,${c.id})">5<span class="rating-label">Zeker weten!</span></button></div></div></div></div>`;
+  document.addEventListener('keydown',ankiSpace);
+}
+function ankiSpace(e){if(e.code==='Space'||e.key===' '){e.preventDefault();const a=document.getElementById('anki-ans'),r=document.getElementById('anki-rating');if(a&&!a.classList.contains('visible')){a.classList.add('visible');if(r)r.style.display='block';}document.removeEventListener('keydown',ankiSpace);}}
+async function rateAnki(rating,cardId){const c=quizSession.cards[quizSession.idx],ok=rating>=4;await sb.from('flashcards').update({practiced:c.practiced+1,correct:c.correct+(ok?1:0),last_rating:rating}).eq('id',cardId);if(ok)quizSession.correct++;quizSession.idx++;quizSession.answered=false;updateLiveStats();renderQuestion();}
+async function submitType(){
+  if(quizSession.answered)return;quizSession.answered=true;
+  const c=quizSession.cards[quizSession.idx],ans=document.getElementById('ans').value.trim();
+  if(!ans){quizSession.answered=false;return;}
+  document.getElementById('fb').innerHTML='<div class="loading-row"><div class="spinner"></div>Feedback ophalen...</div>';
+  try{const raw=await ai(`You are a study coach grading a student answer.\nQuestion: ${c.question}\nCorrect answer: ${c.answer}\nStudent answer: ${ans}\nReply in Dutch. Return ONLY JSON (no fences):\n{"score":"good"|"ok"|"bad","feedback":"2-3 sentences in Dutch","correct_answer":"${c.answer.replace(/"/g,"'")}"}`,400);
+  const fb=parseJSON(raw);const cls=fb.score==='good'?'fb-good':fb.score==='ok'?'fb-ok':'fb-bad';
+  document.getElementById('fb').innerHTML=`<div class="feedback-box ${cls}">${fb.feedback}</div><div class="model-ans"><strong>Modelantwoord:</strong> ${fb.correct_answer}</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button class="btn btn-nl" onclick="quizExplainNL(${c.id})">Uitleg in NL</button><button class="btn btn-primary" onclick="nextQ()">Volgende →</button></div><div id="quiz-nl-${c.id}"></div>`;
+  await sb.from('flashcards').update({practiced:c.practiced+1,correct:c.correct+(fb.score==='good'?1:0)}).eq('id',c.id);if(fb.score==='good')quizSession.correct++;updateLiveStats();}
+  catch(e){document.getElementById('fb').innerHTML=`<div class="feedback-box fb-bad">Fout: ${e.message}</div>`;}
+}
+function skipQ(){document.removeEventListener('keydown',ankiSpace);quizSession.idx++;quizSession.answered=false;updateLiveStats();renderQuestion();}
+function nextQ(){quizSession.idx++;quizSession.answered=false;renderQuestion();}
+async function showResult(){
+  const{cards,correct}=quizSession,pct=Math.round(correct/cards.length*100);
+  const emoji=pct>=80?'🎉':pct>=60?'👍':'💪';
+  document.getElementById('quiz-play').innerHTML=`<div class="quiz-wrap"><div class="quiz-card result-screen">
+    <div class="result-num">${pct}%</div>
+    <div style="font-size:15px;margin:0.4rem 0 0.25rem">${emoji}</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">${correct} van ${cards.length} goed</div>
+    <div style="background:var(--bg);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1.5rem;font-size:13px;color:var(--muted);text-align:left">
+      <strong style="color:var(--text)">Wil je doorgaan?</strong><br/>
+      Kaartjes die je slecht kende komen als eerste terug.
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="continueQuiz()">Doorgaan oefenen →</button>
+      <button class="btn" onclick="restartQuiz()">Nieuwe sessie</button>
+      <button class="btn" onclick="showTab('progress')">Voortgang</button>
+    </div>
+  </div></div>`;
+  await sb.from('quiz_sessions').insert({total:cards.length,correct,vak:quizSession.vak||null,mode:quizMode});
+}
+async function continueQuiz(){
+  const vak=quizSession.vak||'';
+  let q=sb.from('flashcards').select('*');if(vak)q=q.eq('vak',vak);
+  const{data:cards}=await q;if(!cards||!cards.length)return;
+  function getWeight(card){if(card.practiced===0)return 3;const r=card.last_rating||0;if(r===1)return 6;if(r===2)return 4;if(r===3)return 2;if(r===4)return 1;if(r===5)return 0.3;const score=card.correct/card.practiced;return score<0.4?5:score<0.7?2:1;}
+  let weighted=[];cards.forEach(card=>{const w=Math.ceil(getWeight(card));for(let i=0;i<w;i++)weighted.push(card);});
+  for(let i=weighted.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[weighted[i],weighted[j]]=[weighted[j],weighted[i]];}
+  const seen=new Set();let pool=[];weighted.forEach(c=>{if(!seen.has(c.id)){seen.add(c.id);pool.push(c);}});
+  const count=selectedTime===0?pool.length:Math.max(1,Math.min(Math.floor(selectedTime/2.5),pool.length));
+  quizSession={cards:pool.slice(0,count),idx:0,answered:false,correct:0,vak};
+  updateLiveStats();renderQuestion();
+}
+function restartQuiz(){document.getElementById('quiz-setup').style.display='block';document.getElementById('quiz-play').style.display='none';}
+
+// ── Essay ──
+async function generateEssayQuestion(){
+  const vak=document.getElementById('essay-vak').value;document.getElementById('essay-vraag').value='Bezig...';
+  try{const raw=await ai(`Generate one challenging exam essay question for ${vak==='CC'?'Conflict & Cooperation in Cyberspace':'Digital Crime'} at Master level (Leiden University). Requires analysis and argumentation. Return ONLY the question.`,200);document.getElementById('essay-vraag').value=raw.trim();}
+  catch(e){document.getElementById('essay-vraag').value='Fout: '+e.message;}
+}
+async function submitEssay(){
+  const vraag=document.getElementById('essay-vraag').value.trim(),text=document.getElementById('essay-text').value.trim(),vak=document.getElementById('essay-vak').value;
+  if(!text||text.length<100){toast('Schrijf eerst een essay van minimaal een paar alinea\'s.');return;}
+  document.getElementById('essay-loading').style.display='flex';document.getElementById('essay-btn').disabled=true;document.getElementById('essay-result').innerHTML='';
+  try{const raw=await ai(`You are a professor at Leiden University grading a Master essay for ${vak==='CC'?'Conflict & Cooperation in Cyberspace':'Digital Crime'}.\nQuestion: ${vraag||'(not specified)'}\nStudent essay:\n${text.slice(0,4000)}\nProvide detailed feedback in Dutch with these HTML sections:\n<h4>Algemene beoordeling</h4>(2-3 sentences, suggest grade out of 10)\n<h4>Sterke punten</h4>\n<h4>Verbeterpunten</h4>\n<h4>Structuur & argumentatie</h4>\n<h4>Tip voor het tentamen</h4>\nBe honest and specific.`,900);
+  document.getElementById('essay-result').innerHTML=`<div class="essay-feedback">${raw}</div>`;}
+  catch(e){toast('Fout: '+e.message);}finally{document.getElementById('essay-loading').style.display='none';document.getElementById('essay-btn').disabled=false;}
+}
+
+// ── Quiz NL uitleg ──
+async function quizExplainNL(cardId){
+  const c=quizSession.cards.find(x=>x.id===cardId);if(!c)return;
+  const elId='quiz-nl-'+cardId;const el=document.getElementById(elId);if(!el)return;
+  if(el.textContent&&el.style.display!=='none'){el.style.display='none';return;}
+  el.style.display='block';el.textContent='Uitleg laden...';
+  el.style.cssText='display:block;background:var(--amber-bg);border-radius:var(--radius-sm);padding:0.75rem;margin-top:0.75rem;font-size:13px;line-height:1.6;color:#78350F;border:1px solid #F6D860;';
+  try{const raw=await ai(`Leg het volgende concept uit in het Nederlands, begrijpelijk voor een masterstudent. Kort (2-4 zinnen), geen onnodig jargon.
+
+Concept: ${c.question}
+Antwoord: ${c.answer}`,300);el.textContent=raw;}
+  catch(e){el.textContent='Fout: '+e.message;}
+}
+// ── AI Tutor ──
+async function sendChat(){
+  const input=document.getElementById('chat-input');const msg=input.value.trim();if(!msg)return;
+  input.value='';addChatMsg(msg,'user');
+  const typingId='typing-'+Date.now();addChatMsg('…',  'ai',typingId);
+  try{
+    const vak=document.getElementById('tutor-vak').value;
+    let q=sb.from('flashcards').select('question,answer,vak,theme').limit(60);if(vak)q=q.eq('vak',vak);
+    const{data:cards}=await q;
+    const context=cards?cards.map(c=>`[${c.vak} - ${c.theme}] Q: ${c.question} A: ${c.answer}`).join('\n'):'Geen flashcards beschikbaar.';
+    chatHistory.push({role:'user',content:msg});
+    const sys=`Je bent een vriendelijke AI-tutor voor een masterstudent Crisis & Security Management aan de Universiteit Leiden. De student voorbereidt zich op twee tentamens: Digital Crime (DC) en Conflict & Cooperation in Cyberspace (C&C).\n\nBeantwoord vragen op basis van de onderstaande studiemateriaal-samenvatting. Als iets niet in het materiaal staat, zeg dat dan eerlijk. Antwoord in dezelfde taal als de vraag (Nederlands of Engels). Houd antwoorden helder en studiegericht.\n\nStudiemateriaal:\n${context.slice(0,4000)}`;
+    const reply=await aiChat(chatHistory.slice(-10),sys,600);
+    chatHistory.push({role:'assistant',content:reply});
+    const typingEl=document.getElementById(typingId);if(typingEl)typingEl.remove();
+    addChatMsg(reply,'ai');
+  }catch(e){const typingEl=document.getElementById(typingId);if(typingEl)typingEl.remove();addChatMsg('Sorry, er ging iets mis: '+e.message,'ai');}
+}
+function addChatMsg(text,role,id){
+  const msgs=document.getElementById('chat-messages');
+  const div=document.createElement('div');div.className=`chat-msg ${role}`;if(id)div.id=id;
+  div.textContent=text;msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+function askExample(q){document.getElementById('chat-input').value=q;sendChat();}
+
+// ── Notes ──
+async function saveNote(){
+  const vak=document.getElementById('note-vak').value,week=document.getElementById('note-week').value.trim(),content=document.getElementById('note-text').value.trim();
+  if(!content){toast('Schrijf eerst iets.');return;}
+  if(_editId){
+    const{error}=await sb.from('notes').update({vak:vak||null,week:week||null,content}).eq('id',_editId);
+    if(error){toast('Fout: '+error.message);return;}
+    toast('Bijgewerkt!');_editId=null;
+    document.getElementById('note-save-btn').textContent='Opslaan →';
+  } else {
+    const{error}=await sb.from('notes').insert({vak:vak||null,week:week||null,content});
+    if(error){toast('Fout: '+error.message);return;}
+    toast('Opgeslagen!');
+  }
+  document.getElementById('note-text').value='';
+  document.getElementById('note-week').value='';
+  loadNotes();
+}
+async function loadNotes(){
+  const vf=document.getElementById('notes-filter-vak').value;
+  let q=sb.from('notes').select('*').order('created_at',{ascending:false});if(vf)q=q.eq('vak',vf);
+  const{data:notes}=await q;
+  const el=document.getElementById('notes-list');
+  if(!notes||!notes.length){el.innerHTML='<div class="empty">Nog geen aantekeningen voor dit filter.</div>';return;}
+  _allNotes=notes;
+  el.innerHTML=notes.map(n=>`<div class="note-card"><div class="note-meta">${n.vak?`<span class="tag tag-${n.vak==='CC'?'cc':'dc'}" style="margin-right:6px">${n.vak}</span>`:''}${n.week?`<strong>${n.week}</strong> · `:''}${new Date(n.created_at).toLocaleDateString('nl-NL')}</div><div class="note-content">${n.content}</div><div class="note-actions"><button class="btn btn-sm" onclick="editNote(${n.id})">Bewerken</button> <button class="btn btn-sm btn-danger" onclick="deleteNote(${n.id})">Verwijderen</button></div></div>`).join('');
+}
+let _allNotes=[];
+let _editId=null;
+function editNote(id){
+  const n=_allNotes.find(x=>x.id===id);
+  if(!n)return;
+  document.getElementById('note-vak').value=n.vak||'';
+  document.getElementById('note-week').value=n.week||'';
+  document.getElementById('note-text').value=n.content;
+  _editId=id;
+  const btn=document.getElementById('note-save-btn');
+  btn.textContent='Bijwerken →';
+  toast('Pas de tekst aan en klik Bijwerken');
+}
+async function deleteNote(id){if(!confirm('Verwijderen?'))return;await sb.from('notes').delete().eq('id',id);toast('Verwijderd.');loadNotes();}
+
+// ── Progress ──
+async function loadProgress(){
+  const{data:cards}=await sb.from('flashcards').select('*');const{data:sessions}=await sb.from('quiz_sessions').select('*');
+  if(!cards)return;const practiced=cards.filter(c=>c.practiced>0);const goodPct=practiced.length?Math.round(practiced.reduce((a,c)=>a+c.correct/c.practiced,0)/practiced.length*100):0;
+  document.getElementById('p-total').textContent=cards.length;document.getElementById('p-done').textContent=practiced.length;document.getElementById('p-good').textContent=goodPct+'%';document.getElementById('p-sessions').textContent=sessions?sessions.length:0;
+  renderTopicBars('p-topics',cards);
+  const weak=cards.filter(c=>c.practiced>0&&c.correct/c.practiced<0.5);
+  document.getElementById('p-repeat').innerHTML=weak.length?weak.slice(0,6).map(c=>{const s=scoreLabel(c.practiced,c.correct);return`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;align-items:center;gap:8px"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="flex:1">${c.question.slice(0,60)}…</span><span class="fc-score ${s.cls}" style="flex-shrink:0">${s.text}</span></div>`;}).join(''):'<div style="font-size:13px;color:var(--muted)">Niets te herhalen — geweldig!</div>';
+}
+
+// ── Setup ──
+async function checkConnection(){try{const{error}=await sb.from('flashcards').select('id').limit(1);document.getElementById('conn-status').innerHTML=error?`<span style="color:var(--red)">❌ ${error.message}</span>`:`<span style="color:var(--green)">✓ Verbonden</span>`;}catch(e){document.getElementById('conn-status').textContent='❌ Kan niet verbinden';}}
+async function testConnection(){const el=document.getElementById('conn-result');el.innerHTML='<div class="loading-row"><div class="spinner"></div>Testen...</div>';try{const{error}=await sb.from('flashcards').select('id').limit(1);el.innerHTML=error?`<span style="color:var(--red)">❌ ${error.message}</span>`:`<span style="color:var(--green)">✓ Alles werkt!</span>`;}catch(e){el.textContent='❌ '+e.message;}}
+async function deleteAll(){if(!confirm('Alle flashcards verwijderen?'))return;await sb.from('flashcards').delete().neq('id',0);toast('Verwijderd.');}
+
+loadDashboard();
+
+// ── Hero section ──
+function initHero() {
+  const now = new Date();
+  const h = now.getHours();
+  const greetings = [
+    h < 12 ? 'Goedemorgen, Anne ✨' : h < 17 ? 'Goedemiddag, Anne ✨' : 'Goedenavond, Anne ✨'
+  ];
+  document.getElementById('hero-greeting').textContent = greetings[0];
+  const days = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+  const months = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  document.getElementById('hero-datum').textContent = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  const quotes = [
+    'Er is niks dat ik niet kan.',
+    'Ik kan het.',
+    'Er is niks dat ik niet kan.',
+    'Ik kan het.',
+    'Er is niks dat ik niet kan.',
+    'Ik kan het.',
+    'Er is niks dat ik niet kan.'
+  ];
+  document.getElementById('hero-quote').textContent = quotes[now.getDay() % quotes.length];
+  const dc = new Date('2026-05-26T15:00:00'), cc = new Date('2026-05-28T09:00:00');
+  document.getElementById('hero-days-dc').textContent = Math.max(0,Math.ceil((dc-now)/86400000));
+  document.getElementById('hero-days-cc').textContent = Math.max(0,Math.ceil((cc-now)/86400000));
+}
+initHero();
+
+// ── Cost tracker (Supabase) ──
+let totalCost = 0;
+
+async function loadTotalCost() {
+  try {
+    const {data} = await sb.from('api_costs').select('cost');
+    if(data) {
+      totalCost = data.reduce((sum, row) => sum + parseFloat(row.cost), 0);
+      updateCostMeter();
+    }
+  } catch(e) { console.log('Cost load error:', e); }
+}
+
+async function addCost(amount, action) {
+  try {
+    await sb.from('api_costs').insert({action: action||'api_call', cost: amount});
+    totalCost = Math.round((totalCost + amount) * 100000) / 100000;
+    updateCostMeter();
+  } catch(e) { console.log('Cost save error:', e); }
+}
+
+function updateCostMeter() {
+  const el = document.getElementById('cost-meter');
+  if(el) el.textContent = '$' + totalCost.toFixed(3);
+}
+loadTotalCost();
+
+// Wrap ai() to track costs in Supabase
+const _origAi = ai;
+ai = async function(prompt, maxT=1200) {
+  const result = await _origAi(prompt, maxT);
+  const inputTokens = Math.ceil(prompt.length / 4);
+  const outputTokens = Math.ceil(result.length / 4);
+  const cost = Math.round(((inputTokens * 0.000003) + (outputTokens * 0.000015)) * 100000) / 100000;
+  addCost(cost, 'ai_call');
+  return result;
+};
+
+// ── Keyboard 1-5 for Anki ──
+document.addEventListener('keydown', function(e) {
+  const key = e.key;
+  if(['1','2','3','4','5'].includes(key)) {
+    const btn = document.querySelector(`.rating-btn.r${key}`);
+    if(btn) { e.preventDefault(); btn.click(); }
+  }
+});
+
+// ── Hero streak (cards practiced today) ──
+async function loadHeroStreak() {
+  const today = new Date().toISOString().slice(0,10);
+  const {data:sessions} = await sb.from('quiz_sessions').select('correct,total').gte('created_at', today+'T00:00:00');
+  const total = sessions ? sessions.reduce((a,s)=>a+s.total,0) : 0;
+  const el = document.getElementById('hero-streak');
+  if(el) el.textContent = total;
+}
+loadHeroStreak();
+</script>
+</body>
+</html>
