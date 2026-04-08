@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
 :root{--bg:#FAF6F0;--bg2:#F2EBE3;--surface:#FFFFFF;--border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);--text:#2C2420;--muted:#7A6E6A;--dc:#1A56DB;--dc-bg:#EEF3FF;--cc:#7E3AF2;--cc-bg:#F3EFFE;--pink:#C4737A;--pink-bg:#FAEAEB;--pink-light:#F5D5D7;--green:#057A55;--green-bg:#DEF7EC;--amber:#92400E;--amber-bg:#FEF3C7;--red:#9B1C1C;--red-bg:#FDE8E8;--radius:12px;--radius-sm:8px;--shadow:0 1px 3px rgba(0,0,0,0.06);--shadow-md:0 4px 20px rgba(0,0,0,0.08);}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -123,7 +124,15 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 /* Notes */
 .note-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow);margin-bottom:0.75rem;}
 .note-meta{font-size:11px;color:var(--muted);margin-bottom:0.4rem;}
-.note-content{font-size:13.5px;line-height:1.6;white-space:pre-wrap;}
+.note-content{font-size:13.5px;line-height:1.7;}
+.note-content h1,.note-content h2,.note-content h3{font-family:'Lora',serif;margin:0.75rem 0 0.3rem;color:var(--text);}
+.note-content h2{font-size:15px;}.note-content h3{font-size:13.5px;}
+.note-content ul,.note-content ol{padding-left:1.25rem;margin:0.4rem 0;}
+.note-content li{margin-bottom:0.2rem;}
+.note-content strong{font-weight:600;color:var(--text);}
+.note-content em{color:var(--muted);}
+.note-content p{margin-bottom:0.5rem;}
+.note-content p:last-child{margin-bottom:0;}
 .note-actions{display:flex;gap:6px;margin-top:0.6rem;padding-top:0.6rem;border-top:1px solid var(--border);}
 /* Summary */
 .summary-box{background:var(--bg);border-radius:var(--radius);padding:1.25rem;font-size:13.5px;line-height:1.8;border:1px solid var(--border);white-space:pre-wrap;}
@@ -170,7 +179,8 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
   </div>
   <div class="nav-section">Studeren</div>
   <button class="nav-item active" onclick="showTab('dashboard')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke-width="1.5"/><rect x="14" y="3" width="7" height="7" rx="1" stroke-width="1.5"/><rect x="3" y="14" width="7" height="7" rx="1" stroke-width="1.5"/><rect x="14" y="14" width="7" height="7" rx="1" stroke-width="1.5"/></svg>Dashboard</button>
-  <button class="nav-item" onclick="showTab('plan')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke-width="1.5" stroke-linecap="round"/></svg>Studieplan</button>
+  <button class="nav-item" onclick="showTab('agenda')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 10h18" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="16" r="1" fill="currentColor"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>Agenda</button>
+  <button class="nav-item" onclick="showTab('plan')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="1.5" stroke-linecap="round"/></svg>Studieplan</button>
   <button class="nav-item" onclick="showTab('quiz')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="1.5"/><path d="M12 8v4l3 3" stroke-width="1.5" stroke-linecap="round"/></svg>Overhoren</button>
   <button class="nav-item" onclick="showTab('essay')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke-width="1.5" stroke-linecap="round"/></svg>Essay oefenen</button>
   <button class="nav-item" onclick="showTab('tutor')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" stroke-width="1.5" stroke-linecap="round"/></svg>AI-tutor</button>
@@ -179,7 +189,9 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
   <button class="nav-item" onclick="showTab('cards')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2" stroke-width="1.5"/><path d="M16 2H8" stroke-width="1.5" stroke-linecap="round"/></svg>Flashcards</button>
   <button class="nav-item" onclick="showTab('notes')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke-width="1.5" stroke-linecap="round"/></svg>Aantekeningen</button>
   <button class="nav-item" onclick="showTab('progress')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 18l5-5 4 4 5-6 4 3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Voortgang</button>
-  <button class="nav-item" onclick="showTab('setup')"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="1.5"/><path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke-width="1.5" stroke-linecap="round"/></svg>Setup</button>
+  <div class="nav-section" style="margin-top:0.5rem">Thema's</div>
+  <div id="sidebar-themes" style="padding:0 0.25rem 0.5rem"><div style="font-size:12px;color:var(--muted);padding:4px 1rem">Laden...</div></div>
+  <button class="nav-item" onclick="showTab('setup')" style="margin-top:auto"><svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="1.5"/><path d="M12 2v2m0 16v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M2 12h2m16 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke-width="1.5" stroke-linecap="round"/></svg>Setup</button>
   <div class="sidebar-bottom">
     <div class="exam-pill"><div class="exam-label">Tentamen 1</div><div class="exam-name" style="color:var(--dc)">Digital Crime</div><div class="exam-meta">Di 26 mei · 15:00–17:00</div><div style="font-size:11px;font-weight:500;color:var(--dc)" id="countdown-dc"></div></div>
     <div class="exam-pill"><div class="exam-label">Tentamen 2</div><div class="exam-name" style="color:var(--cc)">Conflict & Cooperation</div><div class="exam-meta">Do 28 mei · 09:00–11:00</div><div style="font-size:11px;font-weight:500;color:var(--cc)" id="countdown-cc"></div></div>
@@ -227,7 +239,7 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
     <div class="card"><div class="card-title">Herhalen aanbevolen</div><div id="dash-repeat"><div class="loading-row"><div class="spinner"></div>Laden...</div></div></div>
   </div>
   <div style="display:grid;grid-template-columns:3fr 2fr;gap:1rem">
-    <div class="card"><div class="card-title">Voortgang per thema</div><div id="dash-topics"><div class="loading-row"><div class="spinner"></div>Laden...</div></div></div>
+    <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.875rem"><div class="card-title" style="margin-bottom:0">Komende 2 weken</div><button class="btn btn-sm" onclick="showTab('agenda')" style="font-size:11px">Volledige agenda →</button></div><div id="dash-agenda"><div class="loading-row"><div class="spinner"></div>Laden...</div></div></div>
     <div class="card"><div class="card-title">Snel oefenen</div><div style="display:flex;flex-direction:column;gap:8px"><button class="btn btn-dc" onclick="quickQuiz('DC')">Digital Crime → 10 vragen</button><button class="btn btn-cc" onclick="quickQuiz('CC')">C&C → 10 vragen</button><button class="btn" onclick="showTab('essay')" style="font-size:12.5px">Essay oefenen voor C&C →</button><button class="btn" onclick="showTab('tutor')" style="font-size:12.5px">Stel een vraag aan AI-tutor →</button></div></div>
   </div>
 </div>
@@ -287,47 +299,34 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 <!-- QUIZ -->
 <div id="tab-quiz" style="display:none">
   <div class="page-header"><div class="page-title">Overhoren</div><div class="page-sub">Kies hoe je wil oefenen</div></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-    <div>
-      <div id="quiz-setup" class="card">
-        <div class="card-title">Modus kiezen</div>
-        <div class="mode-toggle">
-          <button class="mode-btn active" id="mode-type" onclick="setMode('type')">✍ Antwoord typen<br/><span style="font-size:11px;opacity:0.7">AI geeft feedback</span></button>
-          <button class="mode-btn" id="mode-anki" onclick="setMode('anki')">🧠 Zelf beoordelen<br/><span style="font-size:11px;opacity:0.7">Denk na → spatie → 1-5</span></button>
-        </div>
-        <select id="q-vak" style="margin-bottom:0.5rem" onchange="loadQuizWeeks()"><option value="">Beide vakken</option><option value="DC">Alleen Digital Crime</option><option value="CC">Alleen C&C</option></select>
-        <select id="q-week" style="margin-bottom:1rem"><option value="">Alle lectures</option></select>
-        <div class="card-title">Volgorde</div>
-        <div style="display:flex;gap:8px;margin-bottom:1rem">
-          <button class="btn btn-sm active" id="order-random" style="flex:1;background:var(--text);color:#fff;border-color:var(--text)" onclick="setOrder('random',this)">Door elkaar</button>
-          <button class="btn btn-sm" id="order-prog" style="flex:1" onclick="setOrder('progressive',this)">Progressief (1→20)</button>
-        </div>
-        <div class="card-title">Beschikbare tijd</div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1.25rem">
-          <button class="btn btn-sm" style="background:var(--text);color:#fff;border-color:var(--text)" data-min="15" onclick="setTime(this)">15 min</button>
-          <button class="btn btn-sm" data-min="30" onclick="setTime(this)">30 min</button>
-          <button class="btn btn-sm" data-min="60" onclick="setTime(this)">1 uur</button>
-          <button class="btn btn-sm" data-min="0" onclick="setTime(this)">Alles</button>
-        </div>
-        <button class="btn btn-primary" onclick="startQuiz()">Start sessie →</button>
-      </div>
-      <div id="quiz-play" style="display:none"></div>
+  <div style="max-width:680px;margin:0 auto">
+    <div class="card" style="margin-bottom:0.75rem;padding:0.6rem 1rem;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted)">Voortgang sessie</span>
+      <div id="quiz-live-stats" style="font-size:13px;color:var(--muted)">Nog niet gestart</div>
     </div>
-    <!-- Quiz sidebar: tips -->
-    <div>
-      <div class="card" style="margin-bottom:1rem">
-        <div class="card-title">Studietips</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.7">
-          <div style="padding:6px 0;border-bottom:1px solid var(--border)"><strong style="color:var(--text)">Typen</strong> — Beste voor diepe kennis. De AI geeft feedback op wat je mist.</div>
-          <div style="padding:6px 0;border-bottom:1px solid var(--border)"><strong style="color:var(--text)">Zelf beoordelen</strong> — Sneller, goed voor herhalen. Druk op spatie om het antwoord te zien.</div>
-          <div style="padding:6px 0"><strong style="color:var(--text)">Spaced repetition</strong> — Kaartjes die je slecht kende komen vaker terug dan kaartjes die je goed kende.</div>
-        </div>
+    <div id="quiz-setup" class="card">
+      <div class="card-title">Modus kiezen</div>
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-type" onclick="setMode('type')">✍ Antwoord typen<br/><span style="font-size:11px;opacity:0.7">AI geeft feedback</span></button>
+        <button class="mode-btn" id="mode-anki" onclick="setMode('anki')">🧠 Zelf beoordelen<br/><span style="font-size:11px;opacity:0.7">Denk na → spatie → 1-5</span></button>
       </div>
-      <div class="card">
-        <div class="card-title">Voortgang deze sessie</div>
-        <div id="quiz-live-stats" style="font-size:13px;color:var(--muted)">Nog geen sessie gestart.</div>
+      <select id="q-vak" style="margin-bottom:0.5rem" onchange="loadQuizWeeks()"><option value="">Beide vakken</option><option value="DC">Alleen Digital Crime</option><option value="CC">Alleen C&C</option></select>
+      <select id="q-week" style="margin-bottom:1rem"><option value="">Alle lectures</option></select>
+      <div class="card-title">Volgorde</div>
+      <div style="display:flex;gap:8px;margin-bottom:1rem">
+        <button class="btn btn-sm active" id="order-random" style="flex:1;background:var(--text);color:#fff;border-color:var(--text)" onclick="setOrder('random',this)">Door elkaar</button>
+        <button class="btn btn-sm" id="order-prog" style="flex:1" onclick="setOrder('progressive',this)">Progressief (1→20)</button>
       </div>
+      <div class="card-title">Beschikbare tijd</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1.25rem">
+        <button class="btn btn-sm" style="background:var(--text);color:#fff;border-color:var(--text)" data-min="15" onclick="setTime(this)">15 min</button>
+        <button class="btn btn-sm" data-min="30" onclick="setTime(this)">30 min</button>
+        <button class="btn btn-sm" data-min="60" onclick="setTime(this)">1 uur</button>
+        <button class="btn btn-sm" data-min="0" onclick="setTime(this)">Alles</button>
+      </div>
+      <button class="btn btn-primary" onclick="startQuiz()">Start sessie →</button>
     </div>
+    <div id="quiz-play" style="display:none"></div>
   </div>
 </div>
 
@@ -393,7 +392,13 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
           <select id="note-vak"><option value="">Kies vak...</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
           <input type="text" id="note-week" placeholder="Week / thema"/>
         </div>
-        <textarea id="note-text" placeholder="Schrijf hier je aantekening..." style="min-height:130px"></textarea>
+        <div style="display:flex;gap:4px;margin-bottom:6px">
+          <button class="btn btn-sm" onclick="wrapText('**','**')" title="Vet" style="font-weight:700;min-width:28px">B</button>
+          <button class="btn btn-sm" onclick="wrapText('*','*')" title="Cursief" style="font-style:italic;min-width:28px">I</button>
+          <button class="btn btn-sm" onclick="insertLinePrefix('## ')" title="Kopje" style="min-width:28px">H</button>
+          <button class="btn btn-sm" onclick="insertLinePrefix('- ')" title="Lijst" style="min-width:28px">—</button>
+        </div>
+        <textarea id="note-text" placeholder="Schrijf hier je aantekening... (ondersteunt **vet**, *cursief*, ## kopje, - lijst)" style="min-height:130px"></textarea>
         <div style="display:flex;justify-content:flex-end;margin-top:8px">
           <button id="note-save-btn" class="btn btn-primary" onclick="saveNote()">Opslaan →</button>
         </div>
@@ -421,6 +426,39 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
     <div class="card"><div class="card-title">Per thema</div><div id="p-topics"><div class="loading-row"><div class="spinner"></div></div></div></div>
     <div class="card"><div class="card-title">Aanbevolen herhalen</div><div id="p-repeat"><div class="loading-row"><div class="spinner"></div></div></div></div>
+  </div>
+</div>
+
+<!-- AGENDA -->
+<div id="tab-agenda" style="display:none">
+  <div class="page-header"><div class="page-title">Agenda</div><div class="page-sub">Tentamens, deadlines en eigen afspraken</div></div>
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <button class="btn btn-sm" onclick="agendaNav(-1)">← vorige</button>
+        <div style="font-family:'Lora',serif;font-size:18px" id="agenda-month-title"></div>
+        <button class="btn btn-sm" onclick="agendaNav(1)">volgende →</button>
+      </div>
+      <div id="agenda-calendar"></div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:1rem">
+        <div class="card-title">Event toevoegen</div>
+        <input type="date" id="event-date" style="margin-bottom:0.5rem"/>
+        <input type="text" id="event-time" placeholder="Tijd (bijv. 10:00)" style="margin-bottom:0.5rem"/>
+        <input type="text" id="event-title" placeholder="Omschrijving..."/>
+        <select id="event-vak" style="margin-top:0.5rem;margin-bottom:0.75rem">
+          <option value="">Geen vak</option>
+          <option value="DC">Digital Crime</option>
+          <option value="CC">C&C</option>
+        </select>
+        <button class="btn btn-primary" style="width:100%" onclick="addEvent()">Toevoegen →</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Events deze maand</div>
+        <div id="agenda-event-list" style="font-size:13px"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -454,7 +492,17 @@ DROP POLICY IF EXISTS "allow_all_sessions" ON quiz_sessions;
 DROP POLICY IF EXISTS "allow_all_notes" ON notes;
 CREATE POLICY "allow_all_flashcards" ON flashcards FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "allow_all_sessions" ON quiz_sessions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "allow_all_notes" ON notes FOR ALL USING (true) WITH CHECK (true);</div>
+CREATE POLICY "allow_all_notes" ON notes FOR ALL USING (true) WITH CHECK (true);
+
+-- Agenda events
+CREATE TABLE IF NOT EXISTS events (
+  id BIGSERIAL PRIMARY KEY, title TEXT NOT NULL,
+  date DATE NOT NULL, time TEXT, vak TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "allow_all_events" ON events;
+CREATE POLICY "allow_all_events" ON events FOR ALL USING (true) WITH CHECK (true);</div>
     <button class="btn btn-primary" style="margin-top:1rem" onclick="testConnection()">Test verbinding →</button>
     <div id="conn-result" style="margin-top:10px;font-size:13px"></div>
   </div>
@@ -495,11 +543,11 @@ function updateCountdowns(){
 }
 updateCountdowns();
 
-const TABS=['dashboard','plan','upload','cards','quiz','essay','tutor','notes','progress','setup'];
+const TABS=['dashboard','agenda','plan','upload','cards','quiz','essay','tutor','notes','progress','setup'];
 function showTab(name){
   TABS.forEach(t=>document.getElementById('tab-'+t).style.display=t===name?'block':'none');
   document.querySelectorAll('.nav-item').forEach((btn,i)=>btn.classList.toggle('active',i===TABS.indexOf(name)));
-  if(name==='dashboard')loadDashboard();if(name==='cards')loadCards();if(name==='progress')loadProgress();if(name==='plan')loadPlan();if(name==='setup')checkConnection();if(name==='notes')loadNotes();if(name==='quiz')loadQuizWeeks();
+  if(name==='dashboard')loadDashboard();if(name==='cards')loadCards();if(name==='progress')loadProgress();if(name==='plan')loadPlan();if(name==='setup')checkConnection();if(name==='notes')loadNotes();if(name==='quiz')loadQuizWeeks();if(name==='agenda')loadAgenda();
 }
 
 // ── Dashboard ──
@@ -511,7 +559,7 @@ async function loadDashboard(){
   document.getElementById('s-total').textContent=cards.length;
   document.getElementById('s-done').textContent=practiced.length;
   document.getElementById('s-pct').textContent=goodPct+'%';const hm=document.getElementById('hero-mastered');if(hm)hm.textContent=goodPct;
-  updateCountdowns();renderTopicBars('dash-topics',cards);
+  updateCountdowns();loadAgendaPreview();
   const weak=cards.filter(c=>c.practiced===0||c.correct/c.practiced<0.6);
   const daysLeft=Math.ceil((new Date('2026-05-26')-new Date())/86400000);
   let todayHtml='';
@@ -612,6 +660,7 @@ async function loadCards(){
         <button class="btn btn-sm" onclick="editCard(${c.id})">Bewerken</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCard(${c.id})">Verwijderen</button>
         <button class="btn-nl btn" onclick="explainNL(${c.id})">Uitleg</button>
+        <button class="btn btn-sm" onclick="resetCard(${c.id})" title="Reset voortgang" style="color:var(--muted)">↺</button>
         <div style="margin-left:auto">${sc(c)}</div>
       </div>
     </div>`).join('')}</div>`;
@@ -620,6 +669,7 @@ function editCard(id){const c=window._cards.find(x=>x.id===id);if(!c)return;docu
 function closeModal(){document.getElementById('edit-modal').classList.remove('open');}
 async function saveEdit(){const id=document.getElementById('edit-id').value,q=document.getElementById('edit-q').value.trim(),a=document.getElementById('edit-a').value.trim();if(!q||!a){toast('Vul beide velden in.');return;}await sb.from('flashcards').update({question:q,answer:a}).eq('id',id);closeModal();toast('Bijgewerkt!');loadCards();}
 async function deleteCard(id){if(!confirm('Deze flashcard verwijderen?'))return;await sb.from('flashcards').delete().eq('id',id);toast('Verwijderd.');loadCards();}
+async function resetCard(id){if(!confirm('Voortgang van deze flashcard resetten?'))return;await sb.from('flashcards').update({practiced:0,correct:0,last_rating:0}).eq('id',id);toast('Voortgang gereset.');loadCards();}
 async function explainNL(id){
   const c=window._cards.find(x=>x.id===id);if(!c)return;
   const nlEl=document.getElementById('fcnl-'+id);
@@ -829,7 +879,7 @@ async function loadNotes(){
   const el=document.getElementById('notes-list');
   if(!notes||!notes.length){el.innerHTML='<div class="empty">Nog geen aantekeningen voor dit filter.</div>';return;}
   _allNotes=notes;
-  el.innerHTML=notes.map(n=>`<div class="note-card"><div class="note-meta">${n.vak?`<span class="tag tag-${n.vak==='CC'?'cc':'dc'}" style="margin-right:6px">${n.vak}</span>`:''}${n.week?`<strong>${n.week}</strong> · `:''}${new Date(n.created_at).toLocaleDateString('nl-NL')}</div><div class="note-content">${n.content}</div><div class="note-actions"><button class="btn btn-sm" onclick="editNote(${n.id})">Bewerken</button> <button class="btn btn-sm btn-danger" onclick="deleteNote(${n.id})">Verwijderen</button></div></div>`).join('');
+  el.innerHTML=notes.map(n=>`<div class="note-card"><div class="note-meta">${n.vak?`<span class="tag tag-${n.vak==='CC'?'cc':'dc'}" style="margin-right:6px">${n.vak}</span>`:''}${n.week?`<strong>${n.week}</strong> · `:''}${new Date(n.created_at).toLocaleDateString('nl-NL')}</div><div class="note-content markdown-body">${typeof marked!=='undefined'?marked.parse(n.content):n.content}</div><div class="note-actions"><button class="btn btn-sm" onclick="editNote(${n.id})">Bewerken</button> <button class="btn btn-sm btn-danger" onclick="deleteNote(${n.id})">Verwijderen</button></div></div>`).join('');
 }
 let _allNotes=[];
 let _editId=null;
@@ -862,6 +912,7 @@ async function testConnection(){const el=document.getElementById('conn-result');
 async function deleteAll(){if(!confirm('Alle flashcards verwijderen?'))return;await sb.from('flashcards').delete().neq('id',0);toast('Verwijderd.');}
 
 loadDashboard();
+if(typeof marked!=='undefined'){try{marked.use({breaks:true});}catch(e){try{marked.setOptions({breaks:true});}catch(e2){}}}
 
 // ── Hero section ──
 function initHero() {
@@ -947,12 +998,143 @@ async function loadHeroStreak() {
 }
 loadHeroStreak();
 
+// ── Aantekeningen opmaak ──
+function wrapText(before, after){
+  const ta=document.getElementById('note-text');
+  const s=ta.selectionStart,e=ta.selectionEnd;
+  const sel=ta.value.substring(s,e)||'tekst';
+  ta.value=ta.value.substring(0,s)+before+sel+after+ta.value.substring(e);
+  ta.focus();ta.setSelectionRange(s+before.length,s+before.length+sel.length);
+}
+function insertLinePrefix(prefix){
+  const ta=document.getElementById('note-text');
+  const s=ta.selectionStart;
+  const lineStart=ta.value.lastIndexOf('\n',s-1)+1;
+  ta.value=ta.value.substring(0,lineStart)+prefix+ta.value.substring(lineStart);
+  ta.focus();ta.setSelectionRange(s+prefix.length,s+prefix.length);
+}
+
+// ── Sidebar thema's ──
+async function loadSidebarThemes(){
+  const{data}=await sb.from('flashcards').select('vak,theme').order('vak');
+  if(!data||!data.length){document.getElementById('sidebar-themes').innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px 1rem">Nog geen thema\'s</div>';return;}
+  const seen=new Set();const themes=[];
+  data.forEach(c=>{const k=c.vak+'::'+c.theme;if(!seen.has(k)){seen.add(k);themes.push(c);}});
+  document.getElementById('sidebar-themes').innerHTML=themes.map(t=>`
+    <div style="display:flex;align-items:center;gap:6px;padding:3px 0.75rem;cursor:pointer;border-radius:var(--radius-sm);transition:background 0.1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''" onclick="filterByTheme('${t.vak}','${t.theme.replace(/'/g,"\\'")}')">
+      <span class="tag tag-${t.vak==='CC'?'cc':'dc'}" style="font-size:10px;padding:1px 5px">${t.vak}</span>
+      <span style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px">${t.theme}</span>
+    </div>`).join('');
+}
+function filterByTheme(vak,theme){
+  showTab('cards');
+  setTimeout(()=>{
+    document.getElementById('f-vak').value=vak;
+    document.getElementById('f-week').value='';
+    loadCards();
+    const weekSel=document.getElementById('f-week');
+    const opts=Array.from(weekSel.options);
+    const match=opts.find(o=>o.value===theme);
+    if(match){weekSel.value=theme;loadCards();}
+  },200);
+}
+
+// ── Agenda ──
+const FIXED_EVENTS=[
+  {id:'fixed-dc',title:'Tentamen Digital Crime',date:'2026-05-26',time:'15:00–17:00',vak:'DC'},
+  {id:'fixed-cc',title:'Tentamen Conflict & Cooperation',date:'2026-05-28',time:'09:00–11:00',vak:'CC'}
+];
+let agendaYear=new Date().getFullYear(),agendaMonth=new Date().getMonth();
+
+async function loadAgendaPreview(){
+  const now=new Date();
+  const twoWeeks=new Date(now.getTime()+14*86400000);
+  const{data}=await sb.from('events').select('*').gte('date',now.toISOString().slice(0,10)).lte('date',twoWeeks.toISOString().slice(0,10)).order('date');
+  const all=[...FIXED_EVENTS,...(data||[])].filter(e=>e.date>=now.toISOString().slice(0,10)&&e.date<=twoWeeks.toISOString().slice(0,10)).sort((a,b)=>a.date.localeCompare(b.date));
+  const el=document.getElementById('dash-agenda');if(!el)return;
+  if(!all.length){el.innerHTML='<div style="font-size:13px;color:var(--muted)">Geen events de komende 2 weken.</div>';return;}
+  const days=['zo','ma','di','wo','do','vr','za'];
+  const months=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  el.innerHTML=all.map(e=>{
+    const d=new Date(e.date+'T12:00:00');
+    const color=e.vak==='DC'?'var(--dc)':e.vak==='CC'?'var(--cc)':'var(--text)';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div style="text-align:center;min-width:38px">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase">${days[d.getDay()]}</div>
+        <div style="font-size:18px;font-weight:600;color:${color};line-height:1.1">${d.getDate()}</div>
+        <div style="font-size:10px;color:var(--muted)">${months[d.getMonth()]}</div>
+      </div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500">${e.title}</div>${e.time?`<div style="font-size:11px;color:var(--muted)">${e.time}</div>`:''}</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadAgenda(){
+  const months=['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
+  document.getElementById('agenda-month-title').textContent=months[agendaMonth]+' '+agendaYear;
+  const firstDay=new Date(agendaYear,agendaMonth,1);
+  const lastDay=new Date(agendaYear,agendaMonth+1,0);
+  const startDate=`${agendaYear}-${String(agendaMonth+1).padStart(2,'0')}-01`;
+  const endDate=`${agendaYear}-${String(agendaMonth+1).padStart(2,'0')}-${String(lastDay.getDate()).padStart(2,'0')}`;
+  const{data}=await sb.from('events').select('*').gte('date',startDate).lte('date',endDate).order('date');
+  const allEvents=[...FIXED_EVENTS,...(data||[])].filter(e=>e.date>=startDate&&e.date<=endDate);
+  const eventsByDate={};
+  allEvents.forEach(e=>{if(!eventsByDate[e.date])eventsByDate[e.date]=[];eventsByDate[e.date].push(e);});
+  // Build calendar grid
+  const dayNames=['Ma','Di','Wo','Do','Vr','Za','Zo'];
+  let html=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">${dayNames.map(d=>`<div style="text-align:center;font-size:11px;font-weight:600;color:var(--muted);padding:4px">${d}</div>`).join('')}</div>`;
+  html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+  // Offset: getDay() returns 0=sun, we want 0=mon
+  let offset=(firstDay.getDay()+6)%7;
+  for(let i=0;i<offset;i++)html+=`<div></div>`;
+  const today=new Date().toISOString().slice(0,10);
+  for(let d=1;d<=lastDay.getDate();d++){
+    const dateStr=`${agendaYear}-${String(agendaMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const evs=eventsByDate[dateStr]||[];
+    const isToday=dateStr===today;
+    html+=`<div style="min-height:56px;border:1px solid var(--border);border-radius:6px;padding:4px;background:${isToday?'var(--bg2)':'var(--surface)'}">
+      <div style="font-size:12px;font-weight:${isToday?'700':'400'};color:${isToday?'var(--text)':'var(--muted)'};margin-bottom:2px">${d}</div>
+      ${evs.map(e=>`<div style="font-size:10px;padding:1px 4px;border-radius:3px;margin-bottom:1px;background:${e.vak==='DC'?'var(--dc-bg)':e.vak==='CC'?'var(--cc-bg)':'var(--bg2)'};color:${e.vak==='DC'?'var(--dc)':e.vak==='CC'?'var(--cc)':'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${e.title}">${e.title}</div>`).join('')}
+    </div>`;
+  }
+  html+='</div>';
+  document.getElementById('agenda-calendar').innerHTML=html;
+  // Event list
+  const listEl=document.getElementById('agenda-event-list');
+  const sorted=[...FIXED_EVENTS,...(data||[])].filter(e=>e.date>=startDate&&e.date<=endDate).sort((a,b)=>a.date.localeCompare(b.date));
+  listEl.innerHTML=sorted.length?sorted.map(e=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+    <div><div style="font-weight:500">${e.title}</div><div style="font-size:11px;color:var(--muted)">${e.date}${e.time?' · '+e.time:''}</div></div>
+    ${e.id&&!String(e.id).startsWith('fixed')?`<button class="btn btn-sm btn-danger" onclick="deleteEvent(${e.id})" style="padding:2px 7px;font-size:11px">×</button>`:''}
+  </div>`).join(''):'<div style="color:var(--muted)">Geen events deze maand.</div>';
+}
+
+function agendaNav(dir){agendaMonth+=dir;if(agendaMonth>11){agendaMonth=0;agendaYear++;}if(agendaMonth<0){agendaMonth=11;agendaYear--;}loadAgenda();}
+
+async function addEvent(){
+  const date=document.getElementById('event-date').value;
+  const time=document.getElementById('event-time').value.trim();
+  const title=document.getElementById('event-title').value.trim();
+  const vak=document.getElementById('event-vak').value;
+  if(!date||!title){toast('Vul datum en omschrijving in.');return;}
+  const{error}=await sb.from('events').insert({title,date,time:time||null,vak:vak||null});
+  if(error){toast('Fout: '+error.message);return;}
+  document.getElementById('event-title').value='';
+  document.getElementById('event-time').value='';
+  toast('Toegevoegd!');loadAgenda();
+}
+async function deleteEvent(id){
+  await sb.from('events').delete().eq('id',id);
+  toast('Verwijderd.');loadAgenda();
+}
+
+loadSidebarThemes();
+
 // Functies beschikbaar maken voor onclick-knoppen in de HTML
 Object.assign(window, {
   showTab, closeModal, saveEdit,
   dragOver, dragLeave, dropFile, handleFile,
   generateCards, generateSummary,
-  loadCards, editCard, deleteCard, explainNL,
+  loadCards, editCard, deleteCard, explainNL, resetCard,
   setMode, setTime, quickQuiz, setOrder,
   loadQuizWeeks, startQuiz,
   rateAnki, submitType, skipQ, nextQ,
@@ -960,7 +1142,10 @@ Object.assign(window, {
   generateEssayQuestion, submitEssay, quizExplainNL,
   sendChat, askExample,
   saveNote, loadNotes, editNote, deleteNote,
-  testConnection, deleteAll
+  wrapText, insertLinePrefix,
+  testConnection, deleteAll,
+  agendaNav, addEvent, deleteEvent,
+  filterByTheme
 });
 </script>
 </body>
