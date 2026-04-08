@@ -345,6 +345,11 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
     <select id="f-type" onchange="loadCards()" style="width:auto;flex:none"><option value="">Alle typen</option><option value="slides">Slides</option><option value="artikel">Artikel</option><option value="reader">Reader</option></select>
     <button class="btn btn-sm" onclick="loadCards()">↺ Vernieuwen</button>
   </div>
+  <div id="bulk-bar" style="display:none;align-items:center;gap:8px;margin-bottom:0.75rem;padding:8px 12px;background:var(--amber-bg);border:1px solid var(--border2);border-radius:var(--radius-sm)">
+    <input type="checkbox" id="select-all-cb" onchange="toggleSelectAll(this.checked)" style="width:15px;height:15px;cursor:pointer"/>
+    <span id="selected-count" style="font-size:13px;color:var(--muted)">0 geselecteerd</span>
+    <button class="btn btn-sm btn-danger" onclick="deleteSelected()" style="margin-left:auto">Verwijder geselecteerde</button>
+  </div>
   <div id="cards-grid"><div class="loading-row"><div class="spinner"></div>Laden...</div></div>
 </div>
 
@@ -680,11 +685,12 @@ function dragOver(e){e.preventDefault();document.getElementById('dropzone').clas
 function dragLeave(){document.getElementById('dropzone').classList.remove('drag');}
 function dropFile(e){e.preventDefault();dragLeave();const file=e.dataTransfer.files[0];if(file)readFile(file);}
 function handleFile(e){if(e.target.files[0])readFile(e.target.files[0]);}
-async function readFile(file){if(file.type==='application/pdf'||file.name.endsWith('.pdf')){await readPDF(file);}else{const r=new FileReader();r.onload=e=>document.getElementById('up-text').value=e.target.result;r.readAsText(file);}}
+async function readFile(file){if(file.type==='application/pdf'||file.name.endsWith('.pdf')){await readPDF(file);}else{const r=new FileReader();r.onload=e=>{document.getElementById('up-text').value=e.target.result;updateWordCount();};r.readAsText(file);}}
 async function readPDF(file){
   const ta=document.getElementById('up-text');ta.value='PDF wordt ingelezen...';
   try{pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let text='';for(let i=1;i<=Math.min(pdf.numPages,50);i++){const page=await pdf.getPage(i);const content=await page.getTextContent();text+=content.items.map(x=>x.str).join(' ')+'\n';}
   ta.value=text.trim().length<50?'Geen leesbare tekst gevonden (scan?).':text.trim();if(text.trim().length>50)toast(`PDF ingelezen — ${pdf.numPages} pagina's`);}catch(err){ta.value='PDF fout: '+err.message;}
+  updateWordCount();
 }
 function updateWordCount(){
   const text=document.getElementById('up-text').value;
@@ -747,9 +753,14 @@ async function loadCards(){
   // Store cards globally for edit access
   window._cards=cards;
   const sc=c=>{const s=scoreLabel(c.practiced,c.correct);return`<span class="fc-score ${s.cls}">${s.text}</span>`;};
+  document.getElementById('bulk-bar').style.display='flex';
+  document.getElementById('select-all-cb').checked=false;
+  document.getElementById('selected-count').textContent='0 geselecteerd';
   grid.innerHTML=`<div class="fc-grid">${cards.map((c,i)=>`
     <div class="flashcard" id="fc-${c.id}">
-      <div class="fc-meta"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span>${c.mat_type==='artikel'?'<span class="tag" style="background:#FDF4E7;color:#92400E">artikel</span>':''}<span style="font-size:11px;color:var(--muted)">${c.week} · ${c.theme}</span></div>
+      <div class="fc-meta">
+        <input type="checkbox" class="fc-cb" data-id="${c.id}" onchange="updateSelectedCount()" style="width:14px;height:14px;cursor:pointer;flex-shrink:0"/>
+        <span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span>${c.mat_type==='artikel'?'<span class="tag" style="background:#FDF4E7;color:#92400E">artikel</span>':''}<span style="font-size:11px;color:var(--muted)">${c.week} · ${c.theme}</span></div>
       <div class="fc-q" onclick="document.getElementById('fca-${c.id}').classList.toggle('open')">${c.question}</div>
       <div class="fc-a" id="fca-${c.id}">${c.answer}</div>
       <div class="fc-nl" id="fcnl-${c.id}"></div>
@@ -766,6 +777,9 @@ function editCard(id){const c=window._cards.find(x=>x.id===id);if(!c)return;docu
 function closeModal(){document.getElementById('edit-modal').classList.remove('open');}
 async function saveEdit(){const id=document.getElementById('edit-id').value,q=document.getElementById('edit-q').value.trim(),a=document.getElementById('edit-a').value.trim();if(!q||!a){toast('Vul beide velden in.');return;}await sb.from('flashcards').update({question:q,answer:a}).eq('id',id);closeModal();toast('Bijgewerkt!');loadCards();}
 async function deleteCard(id){if(!confirm('Deze flashcard verwijderen?'))return;await sb.from('flashcards').delete().eq('id',id);toast('Verwijderd.');loadCards();}
+function updateSelectedCount(){const n=document.querySelectorAll('.fc-cb:checked').length;document.getElementById('selected-count').textContent=n+' geselecteerd';document.getElementById('select-all-cb').checked=n>0&&n===document.querySelectorAll('.fc-cb').length;}
+function toggleSelectAll(checked){document.querySelectorAll('.fc-cb').forEach(cb=>cb.checked=checked);updateSelectedCount();}
+async function deleteSelected(){const ids=[...document.querySelectorAll('.fc-cb:checked')].map(cb=>parseInt(cb.dataset.id));if(!ids.length){toast('Selecteer eerst kaartjes.');return;}if(!confirm(`${ids.length} flashcard${ids.length>1?'s':''} verwijderen?`))return;await sb.from('flashcards').delete().in('id',ids);toast(`✓ ${ids.length} flashcard${ids.length>1?'s':''} verwijderd.`);loadCards();}
 async function resetCard(id){if(!confirm('Voortgang van deze flashcard resetten?'))return;await sb.from('flashcards').update({practiced:0,correct:0,last_rating:0}).eq('id',id);toast('Voortgang gereset.');loadCards();}
 async function explainNL(id){
   const c=window._cards.find(x=>x.id===id);if(!c)return;
@@ -1267,6 +1281,7 @@ Object.assign(window, {
   toggleDarkMode, updateWordCount, cancelUpload,
   generateCards, generateSummary,
   loadCards, editCard, deleteCard, explainNL, resetCard,
+  updateSelectedCount, toggleSelectAll, deleteSelected,
   setMode, setTime, quickQuiz, setOrder,
   loadQuizWeeks, startQuiz,
   rateAnki, submitType, skipQ, nextQ,
