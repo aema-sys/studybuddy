@@ -471,10 +471,10 @@ CREATE POLICY "allow_all_notes" ON notes FOR ALL USING (true) WITH CHECK (true);
 </main>
 </div>
 
-<script type="module">
-const SUPABASE_URL=import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY=import.meta.env.VITE_SUPABASE_KEY;
-const ANTHROPIC_KEY=import.meta.env.VITE_ANTHROPIC_KEY;
+<script>
+const SUPABASE_URL=__SUPABASE_URL__;
+const SUPABASE_KEY=__SUPABASE_KEY__;
+const ANTHROPIC_KEY=__ANTHROPIC_KEY__;
 const AH={'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let quizMode='type',selectedTime=15,quizSession={cards:[],idx:0,answered:false,correct:0};
