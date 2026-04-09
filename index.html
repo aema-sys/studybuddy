@@ -15,8 +15,13 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
 .layout{display:flex;min-height:100vh;}
-.sidebar{width:232px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.25rem 0;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;}
-.main{margin-left:232px;flex:1;padding:2rem 2.5rem;max-width:calc(100vw - 232px);}
+.sidebar{width:232px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.25rem 0;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;transition:transform 0.25s ease;z-index:100;}
+.sidebar.collapsed{transform:translateX(-232px);}
+.main{margin-left:232px;flex:1;padding:2rem 2.5rem;max-width:calc(100vw - 232px);transition:margin-left 0.25s ease,max-width 0.25s ease;}
+.main.sidebar-hidden{margin-left:0;max-width:100vw;}
+.sidebar-toggle{position:fixed;top:14px;left:244px;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 8px;cursor:pointer;font-size:14px;transition:left 0.25s ease,background 0.12s;box-shadow:var(--shadow);}
+.sidebar-toggle:hover{background:var(--bg);}
+.sidebar.collapsed~.sidebar-toggle,.sidebar-toggle.at-edge{left:12px;}
 .logo{padding:0 1.25rem 1.25rem;border-bottom:1px solid var(--border);margin-bottom:0.5rem;}
 .logo-title{font-family:'Lora',serif;font-size:18px;color:var(--text);}
 .logo-sub{font-size:11px;color:var(--muted);margin-top:2px;}
@@ -154,6 +159,20 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;}
 .sql-box{background:#1A1A18;color:#d4d4c8;font-family:'Courier New',monospace;font-size:12px;padding:1rem;border-radius:var(--radius-sm);line-height:1.8;overflow-x:auto;white-space:pre;}
 @media(max-width:768px){.sidebar{display:none;}.main{margin-left:0;padding:1rem;max-width:100vw;}.stats-row{grid-template-columns:repeat(2,1fr);}.fc-grid{grid-template-columns:1fr;}}
+/* Notes */
+.note-editor-card{transition:all 0.2s ease;}
+.note-editor-card.fullscreen{position:fixed!important;inset:0!important;z-index:400!important;border-radius:0!important;border:none!important;padding:1.5rem 2rem!important;overflow-y:auto!important;}
+.note-editor-card.fullscreen textarea{min-height:calc(100vh - 260px)!important;}
+.note-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;cursor:pointer;transition:border-color 0.12s;}
+.note-item:hover{border-color:var(--border2);}
+.note-item-header{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:12.5px;}
+.note-item-title{flex:1;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.note-item-date{font-size:11px;color:var(--muted);flex-shrink:0;}
+.note-item-chevron{font-size:10px;color:var(--muted);flex-shrink:0;transition:transform 0.15s;}
+.note-item.open .note-item-chevron{transform:rotate(180deg);}
+.note-item-body{display:none;padding:8px 10px 10px;border-top:1px solid var(--border);font-size:13px;line-height:1.65;max-height:340px;overflow-y:auto;color:var(--text);}
+.note-item.open .note-item-body{display:block;}
+.note-item-actions{display:flex;gap:6px;margin-top:8px;padding-top:6px;border-top:1px solid var(--border);}
 /* Dark mode overrides for hardcoded colors */
 .hero-stat{background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px;}
 [data-theme="dark"] #dash-hero{background:linear-gradient(135deg,var(--pink-bg) 0%,var(--bg2) 50%,var(--cc-bg) 100%)!important;}
@@ -183,8 +202,9 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
   </div>
 </div>
 
+<button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Sidebar in/uitklappen">☰</button>
 <div class="layout">
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
   <div class="logo"><div class="logo-title">Studiebuddy</div><div class="logo-sub">MSc Crisis & Security Management</div></div>
   <div style="padding:0.5rem 1.25rem 0.25rem">
     <div style="background:var(--pink-bg);border-radius:var(--radius-sm);padding:0.4rem 0.75rem;display:flex;align-items:center;justify-content:space-between">
@@ -240,7 +260,7 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
   </div>
 </aside>
 
-<main class="main">
+<main class="main" id="main-content">
 
 <!-- DASHBOARD -->
 <div id="tab-dashboard">
@@ -453,33 +473,41 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 
 <!-- AANTEKENINGEN -->
 <div id="tab-notes" style="display:none">
-  <div class="page-header"><div class="page-title">Aantekeningen</div><div class="page-sub">Notities per vak en week — altijd opgeslagen</div></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-    <div>
-      <div class="card" style="margin-bottom:1rem">
-        <div class="card-title">Nieuwe aantekening</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:0.875rem">
-          <select id="note-vak"><option value="">Kies vak...</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
-          <input type="text" id="note-week" placeholder="Week / thema"/>
+  <div class="page-header" style="margin-bottom:1rem"><div class="page-title">Aantekeningen</div><div class="page-sub">Schrijf tijdens je college — altijd opgeslagen</div></div>
+  <div style="display:grid;grid-template-columns:1fr 290px;gap:1rem;align-items:start">
+
+    <!-- Editor card (kan fullscreen worden) -->
+    <div class="card note-editor-card" id="note-editor-card" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="card-title" style="margin-bottom:0" id="note-editor-label">Nieuwe aantekening</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-sm" onclick="toggleNoteFullscreen()" id="note-fs-btn" title="Volledig scherm" style="font-size:15px;padding:4px 8px">⛶</button>
         </div>
-        <div style="display:flex;gap:4px;margin-bottom:6px">
-          <button class="btn btn-sm" onclick="wrapText('**','**')" title="Vet" style="font-weight:700;min-width:28px">B</button>
-          <button class="btn btn-sm" onclick="wrapText('*','*')" title="Cursief" style="font-style:italic;min-width:28px">I</button>
-          <button class="btn btn-sm" onclick="insertLinePrefix('## ')" title="Kopje" style="min-width:28px">H</button>
-          <button class="btn btn-sm" onclick="insertLinePrefix('- ')" title="Lijst" style="min-width:28px">—</button>
-        </div>
-        <textarea id="note-text" placeholder="Schrijf hier je aantekening... (ondersteunt **vet**, *cursief*, ## kopje, - lijst)" style="min-height:130px"></textarea>
-        <div style="display:flex;justify-content:flex-end;margin-top:8px">
-          <button id="note-save-btn" class="btn btn-primary" onclick="saveNote()">Opslaan →</button>
-        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <select id="note-vak"><option value="">Kies vak...</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
+        <input type="text" id="note-week" placeholder="Week / thema"/>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-sm" onclick="wrapText('**','**')" title="Vet" style="font-weight:700;min-width:30px">B</button>
+        <button class="btn btn-sm" onclick="wrapText('*','*')" title="Cursief" style="font-style:italic;min-width:30px">I</button>
+        <button class="btn btn-sm" onclick="insertLinePrefix('## ')" title="Kopje" style="min-width:30px">H</button>
+        <button class="btn btn-sm" onclick="insertLinePrefix('- ')" title="Lijst" style="min-width:30px">—</button>
+      </div>
+      <textarea id="note-text" placeholder="Schrijf hier je aantekening... (ondersteunt **vet**, *cursief*, ## kopje, - lijst)" style="min-height:420px;resize:vertical;font-size:14px;line-height:1.75"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <button class="btn btn-sm" id="note-cancel-btn" onclick="cancelEditNote()" style="display:none;color:var(--muted)">✕ Annuleer bewerken</button>
+        <button id="note-save-btn" class="btn btn-primary" onclick="saveNote()" style="margin-left:auto">Opslaan →</button>
       </div>
     </div>
-    <div>
-      <div style="display:flex;gap:8px;margin-bottom:0.875rem">
-        <select id="notes-filter-vak" onchange="loadNotes()" style="flex:1"><option value="">Alle vakken</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
-        <button class="btn btn-sm" onclick="loadNotes()">↺</button>
+
+    <!-- Opgeslagen aantekeningen (rechter panel) -->
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="notes-filter-vak" onchange="loadNotes()" style="flex:1;font-size:12px;padding:5px 8px"><option value="">Alle vakken</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
+        <button class="btn btn-sm" onclick="loadNotes()" title="Vernieuwen">↺</button>
       </div>
-      <div id="notes-list"><div class="loading-row"><div class="spinner"></div>Laden...</div></div>
+      <div id="notes-list" style="display:flex;flex-direction:column;gap:6px"><div class="loading-row"><div class="spinner"></div></div></div>
     </div>
   </div>
 </div>
@@ -625,17 +653,35 @@ let quizMode='type',selectedTime=15,quizSession={cards:[],idx:0,answered:false,c
 let chatHistory=[];
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar'),main=document.getElementById('main-content'),btn=document.getElementById('sidebar-toggle');
+  const collapsed=sb.classList.toggle('collapsed');
+  main.classList.toggle('sidebar-hidden',collapsed);
+  btn.classList.toggle('at-edge',collapsed);
+  btn.textContent=collapsed?'☰':'✕';
+  btn.title=collapsed?'Sidebar uitklappen':'Sidebar inklappen';
+  localStorage.setItem('sidebar-collapsed',collapsed?'1':'0');
+}
+// Herstel sidebar staat
+(function(){if(localStorage.getItem('sidebar-collapsed')==='1'){const sb=document.getElementById('sidebar'),main=document.getElementById('main-content'),btn=document.getElementById('sidebar-toggle');if(sb){sb.classList.add('collapsed');if(main)main.classList.add('sidebar-hidden');if(btn){btn.classList.add('at-edge');btn.textContent='☰';btn.title='Sidebar uitklappen';}}}})();
 let ai=async function(prompt,maxT=1200){const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:AH,body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxT,messages:[{role:'user',content:prompt}]})});const d=await r.json();if(d.error)throw new Error(d.error.message);return d.content.map(x=>x.text||'').join('');}
 async function aiChat(messages,sys,maxT=800){const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:AH,body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:maxT,system:sys,messages})});const d=await r.json();if(d.error)throw new Error(d.error.message);return d.content.map(x=>x.text||'').join('');}
 function parseJSON(raw){return JSON.parse(raw.replace(/```json|```/g,'').trim());}
 function scoreLabel(practiced,correct){if(!practiced)return{text:'Nog niet geoefend',cls:'fc-score-none'};const p=Math.round(correct/practiced*100);if(p>=70)return{text:`${p}% goed`,cls:'fc-score-good'};if(p>=40)return{text:`${p}% goed`,cls:'fc-score-ok'};return{text:`${p}% goed — herhalen!`,cls:'fc-score-bad'};}
 
+function daysDiff(dateStr){
+  const today=new Date();today.setHours(0,0,0,0);
+  const target=new Date(dateStr);target.setHours(0,0,0,0);
+  return Math.round((target-today)/86400000);
+}
 function updateCountdowns(){
-  const now=new Date(),dc=new Date('2026-05-26T15:00:00'),cc=new Date('2026-05-28T09:00:00');
-  const dDC=Math.ceil((dc-now)/86400000),dCC=Math.ceil((cc-now)/86400000);
-  ['countdown-dc','plan-days-dc'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=dDC>0?`Nog ${dDC} dagen`:'Vandaag!';});
-  ['countdown-cc','plan-days-cc'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=dCC>0?`Nog ${dCC} dagen`:'Vandaag!';});
+  const dDC=daysDiff('2026-05-26'),dCC=daysDiff('2026-05-28');
+  ['countdown-dc','plan-days-dc'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=dDC>0?`Nog ${dDC} dagen`:dDC===0?'Vandaag!':'Geweest';});
+  ['countdown-cc','plan-days-cc'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=dCC>0?`Nog ${dCC} dagen`:dCC===0?'Vandaag!':'Geweest';});
   const s=document.getElementById('s-days');if(s)s.textContent=Math.max(0,dDC);
+  // Also update hero
+  const hdc=document.getElementById('hero-days-dc');if(hdc)hdc.textContent=dDC>0?dDC:(dDC===0?'🎯':'✓');
+  const hcc=document.getElementById('hero-days-cc');if(hcc)hcc.textContent=dCC>0?dCC:(dCC===0?'🎯':'✓');
 }
 updateCountdowns();
 
@@ -979,6 +1025,8 @@ function addChatMsg(text,role,id){
 function askExample(q){document.getElementById('chat-input').value=q;sendChat();}
 
 // ── Notes ──
+let _allNotes=[],_editId=null;
+
 async function saveNote(){
   const vak=document.getElementById('note-vak').value,week=document.getElementById('note-week').value.trim(),content=document.getElementById('note-text').value.trim();
   if(!content){toast('Schrijf eerst iets.');return;}
@@ -987,26 +1035,49 @@ async function saveNote(){
     if(error){toast('Fout: '+error.message);return;}
     toast('Bijgewerkt!');_editId=null;
     document.getElementById('note-save-btn').textContent='Opslaan →';
+    document.getElementById('note-editor-label').textContent='Nieuwe aantekening';
+    document.getElementById('note-cancel-btn').style.display='none';
   } else {
     const{error}=await sb.from('notes').insert({vak:vak||null,week:week||null,content});
     if(error){toast('Fout: '+error.message);return;}
-    toast('Opgeslagen!');
+    toast('✓ Opgeslagen!');
   }
   document.getElementById('note-text').value='';
   document.getElementById('note-week').value='';
+  document.getElementById('note-vak').value='';
   loadNotes();
 }
+
 async function loadNotes(){
   const vf=document.getElementById('notes-filter-vak').value;
   let q=sb.from('notes').select('*').order('created_at',{ascending:false});if(vf)q=q.eq('vak',vf);
   const{data:notes}=await q;
   const el=document.getElementById('notes-list');
-  if(!notes||!notes.length){el.innerHTML='<div class="empty">Nog geen aantekeningen voor dit filter.</div>';return;}
+  if(!notes||!notes.length){el.innerHTML='<div style="font-size:12.5px;color:var(--muted);padding:8px 4px">Nog geen aantekeningen.</div>';return;}
   _allNotes=notes;
-  el.innerHTML=notes.map(n=>`<div class="note-card"><div class="note-meta">${n.vak?`<span class="tag tag-${n.vak==='CC'?'cc':'dc'}" style="margin-right:6px">${n.vak}</span>`:''}${n.week?`<strong>${n.week}</strong> · `:''}${new Date(n.created_at).toLocaleDateString('nl-NL')}</div><div class="note-content markdown-body">${typeof marked!=='undefined'?marked.parse(n.content):n.content}</div><div class="note-actions"><button class="btn btn-sm" onclick="editNote(${n.id})">Bewerken</button> <button class="btn btn-sm btn-danger" onclick="deleteNote(${n.id})">Verwijderen</button></div></div>`).join('');
+  el.innerHTML=notes.map(n=>{
+    const dateStr=new Date(n.created_at).toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+    const title=(n.week||'Zonder titel');
+    const vakTag=n.vak?`<span class="tag tag-${n.vak==='CC'?'cc':'dc'}" style="font-size:10px;padding:1px 5px">${n.vak}</span>`:'';
+    const rendered=typeof marked!=='undefined'?marked.parse(n.content):n.content.replace(/\n/g,'<br>');
+    return`<div class="note-item" id="ni-${n.id}" onclick="toggleNoteItem(${n.id},event)">
+      <div class="note-item-header">${vakTag}<span class="note-item-title">${title}</span><span class="note-item-date">${dateStr}</span><span class="note-item-chevron">▾</span></div>
+      <div class="note-item-body"><div class="markdown-body">${rendered}</div>
+        <div class="note-item-actions">
+          <button class="btn btn-sm" onclick="editNote(${n.id});event.stopPropagation()">Bewerken</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteNote(${n.id});event.stopPropagation()">Verwijderen</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
-let _allNotes=[];
-let _editId=null;
+
+function toggleNoteItem(id,event){
+  const item=document.getElementById('ni-'+id);
+  if(!item)return;
+  item.classList.toggle('open');
+}
+
 function editNote(id){
   const n=_allNotes.find(x=>x.id===id);
   if(!n)return;
@@ -1014,10 +1085,33 @@ function editNote(id){
   document.getElementById('note-week').value=n.week||'';
   document.getElementById('note-text').value=n.content;
   _editId=id;
-  const btn=document.getElementById('note-save-btn');
-  btn.textContent='Bijwerken →';
-  toast('Pas de tekst aan en klik Bijwerken');
+  document.getElementById('note-save-btn').textContent='Bijwerken →';
+  document.getElementById('note-editor-label').textContent='Aantekening bewerken';
+  document.getElementById('note-cancel-btn').style.display='inline-flex';
+  document.getElementById('note-text').scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('note-text').focus();
+  toast('Pas de tekst aan en klik Bijwerken →');
 }
+
+function cancelEditNote(){
+  _editId=null;
+  document.getElementById('note-text').value='';
+  document.getElementById('note-week').value='';
+  document.getElementById('note-vak').value='';
+  document.getElementById('note-save-btn').textContent='Opslaan →';
+  document.getElementById('note-editor-label').textContent='Nieuwe aantekening';
+  document.getElementById('note-cancel-btn').style.display='none';
+}
+
+function toggleNoteFullscreen(){
+  const card=document.getElementById('note-editor-card');
+  const btn=document.getElementById('note-fs-btn');
+  const isFs=card.classList.toggle('fullscreen');
+  btn.textContent=isFs?'✕':'⛶';
+  btn.title=isFs?'Volledig scherm sluiten':'Volledig scherm';
+  if(isFs)document.getElementById('note-text').focus();
+}
+
 async function deleteNote(id){if(!confirm('Verwijderen?'))return;await sb.from('notes').delete().eq('id',id);toast('Verwijderd.');loadNotes();}
 
 // ── Progress ──
@@ -1291,7 +1385,7 @@ function pomSetDuration(min){
 Object.assign(window, {
   showTab, closeModal, saveEdit,
   dragOver, dragLeave, dropFile, handleFile,
-  toggleDarkMode, updateWordCount, cancelUpload,
+  toggleDarkMode, toggleSidebar, updateWordCount, cancelUpload,
   generateCards, generateSummary,
   loadCards, editCard, deleteCard, explainNL, resetCard,
   updateSelectedCount, toggleSelectAll, deleteSelected,
@@ -1301,7 +1395,7 @@ Object.assign(window, {
   continueQuiz, restartQuiz,
   generateEssayQuestion, submitEssay, quizExplainNL,
   sendChat, askExample,
-  saveNote, loadNotes, editNote, deleteNote,
+  saveNote, loadNotes, editNote, deleteNote, cancelEditNote, toggleNoteItem, toggleNoteFullscreen,
   wrapText, insertLinePrefix,
   testConnection, deleteAll,
   agendaNav, addEvent, deleteEvent,
