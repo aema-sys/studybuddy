@@ -160,6 +160,14 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 [data-theme="dark"] .hero-stat{background:rgba(0,0,0,0.25)!important;}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) #dash-hero{background:linear-gradient(135deg,var(--pink-bg) 0%,var(--bg2) 50%,var(--cc-bg) 100%)!important;}:root:not([data-theme="light"]) .hero-stat{background:rgba(0,0,0,0.25)!important;}}
 </style>
+<script>
+// Zet thema direct bij laden (vóór pagina zichtbaar is — voorkomt flits)
+(function(){
+  var s=localStorage.getItem('theme');
+  if(s){document.documentElement.setAttribute('data-theme',s);}
+  else if(window.matchMedia('(prefers-color-scheme:dark)').matches){document.documentElement.setAttribute('data-theme','dark');}
+})();
+</script>
 </head>
 <body>
 <div id="toast"></div>
@@ -589,20 +597,20 @@ function applyTheme(theme){
   const label=document.getElementById('dark-label');
   if(icon) icon.textContent=theme==='dark'?'☀️':'🌙';
   if(label) label.textContent=theme==='dark'?'Lichte modus':'Donkere modus';
+  localStorage.setItem('theme',theme);
 }
 function toggleDarkMode(){
-  const current=document.documentElement.getAttribute('data-theme');
-  const isDark=current==='dark'||(current===null&&window.matchMedia('(prefers-color-scheme:dark)').matches);
-  const next=isDark?'light':'dark';
-  localStorage.setItem('theme',next);
-  applyTheme(next);
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  applyTheme(isDark?'light':'dark');
 }
-// Init on load: stored preference, else follow system
+// Sync knop-label met huidig thema (dat al is gezet door het <head>-script)
 (function(){
-  const stored=localStorage.getItem('theme');
-  if(stored){applyTheme(stored);}
-  else if(window.matchMedia('(prefers-color-scheme:dark)').matches){applyTheme('dark');}
-  // listen for system changes (only if user hasn't manually chosen)
+  const theme=document.documentElement.getAttribute('data-theme')||'light';
+  const icon=document.getElementById('dark-icon');
+  const label=document.getElementById('dark-label');
+  if(icon) icon.textContent=theme==='dark'?'☀️':'🌙';
+  if(label) label.textContent=theme==='dark'?'Lichte modus':'Donkere modus';
+  // Volg systeem als geen handmatige keuze
   window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',e=>{
     if(!localStorage.getItem('theme'))applyTheme(e.matches?'dark':'light');
   });
