@@ -189,6 +189,22 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 .note-item-body{display:none;padding:8px 10px 10px;border-top:1px solid var(--border);font-size:13px;line-height:1.65;max-height:340px;overflow-y:auto;color:var(--text);}
 .note-item.open .note-item-body{display:block;}
 .note-item-actions{display:flex;gap:6px;margin-top:8px;padding-top:6px;border-top:1px solid var(--border);}
+/* Heatmap */
+.heatmap{display:flex;gap:3px;}
+.heatmap-col{display:flex;flex-direction:column;gap:3px;}
+.heatmap-cell{width:12px;height:12px;border-radius:2px;background:var(--bg2);cursor:default;transition:transform 0.1s;}
+.heatmap-cell:hover{transform:scale(1.3);}
+.heatmap-l1{background:#C4E0B8;}
+.heatmap-l2{background:#86C872;}
+.heatmap-l3{background:#4CAF50;}
+.heatmap-l4{background:#2E7D32;}
+[data-theme="dark"] .heatmap-l1{background:#1A3A18;}
+[data-theme="dark"] .heatmap-l2{background:#2A5C25;}
+[data-theme="dark"] .heatmap-l3{background:#3A8A32;}
+[data-theme="dark"] .heatmap-l4{background:#4ABA3A;}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .heatmap-l1{background:#1A3A18;}:root:not([data-theme="light"]) .heatmap-l2{background:#2A5C25;}:root:not([data-theme="light"]) .heatmap-l3{background:#3A8A32;}:root:not([data-theme="light"]) .heatmap-l4{background:#4ABA3A;}}
+/* Confetti canvas */
+#confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:9999;}
 /* Dark mode overrides for hardcoded colors */
 .hero-stat{background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px;}
 [data-theme="dark"] #dash-hero{background:linear-gradient(135deg,var(--pink-bg) 0%,var(--bg2) 50%,var(--cc-bg) 100%)!important;}
@@ -205,6 +221,7 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 </script>
 </head>
 <body>
+<canvas id="confetti-canvas" style="display:none"></canvas>
 <div id="toast"></div>
 
 <!-- Edit modal -->
@@ -299,6 +316,10 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
       <div class="hero-stat">
         <div style="font-family:'Lora',serif;font-size:22px;color:var(--text)" id="hero-streak">—</div>
         <div style="font-size:11px;color:var(--muted)">kaartjes vandaag</div>
+      </div>
+      <div class="hero-stat">
+        <div style="font-family:'Lora',serif;font-size:22px;color:var(--amber)" id="hero-fire">—</div>
+        <div style="font-size:11px;color:var(--muted)">🔥 streak (dagen)</div>
       </div>
       <div class="hero-stat">
         <div style="font-family:'Lora',serif;font-size:22px;color:var(--text)" id="hero-mastered">—</div>
@@ -523,9 +544,17 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
         <button class="note-tb-btn" onmousedown="rteCmd(event,'removeFormat')" title="Opmaak verwijderen" style="color:var(--muted);font-size:11px">✕ opmaak</button>
       </div>
       <div id="note-text" class="note-rte" contenteditable="true" data-placeholder="Schrijf hier je aantekening... Gebruik de knoppen hierboven voor opmaak."></div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <button class="btn btn-sm" id="note-cancel-btn" onclick="cancelEditNote()" style="display:none;color:var(--muted)">✕ Annuleer bewerken</button>
-        <button id="note-save-btn" class="btn btn-primary" onclick="saveNote()" style="margin-left:auto">Opslaan →</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <div style="display:flex;gap:5px;align-items:center">
+          <span style="font-size:11px;color:var(--muted)">Template:</span>
+          <button class="btn btn-sm" onclick="applyNoteTemplate('lecture')" style="font-size:11px">📚 Lecture</button>
+          <button class="btn btn-sm" onclick="applyNoteTemplate('artikel')" style="font-size:11px">📄 Artikel</button>
+          <button class="btn btn-sm" onclick="applyNoteTemplate('werkcollege')" style="font-size:11px">💬 Werkcollege</button>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" id="note-cancel-btn" onclick="cancelEditNote()" style="display:none;color:var(--muted)">✕ Annuleer</button>
+          <button id="note-save-btn" class="btn btn-primary" onclick="saveNote()">Opslaan →</button>
+        </div>
       </div>
     </div>
 
@@ -549,9 +578,22 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
     <div class="stat-card"><div class="stat-num" id="p-good">—</div><div class="stat-lbl">Gemiddeld goed</div></div>
     <div class="stat-card"><div class="stat-num" id="p-sessions">—</div><div class="stat-lbl">Oefensessies</div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Studie heatmap — afgelopen 90 dagen</div>
+    <div id="p-heatmap" style="overflow-x:auto"></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--muted)">
+      <span>Minder</span>
+      <span style="display:flex;gap:3px" id="heatmap-legend"></span>
+      <span>Meer</span>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
     <div class="card"><div class="card-title">Per thema</div><div id="p-topics"><div class="loading-row"><div class="spinner"></div></div></div></div>
     <div class="card"><div class="card-title">Aanbevolen herhalen</div><div id="p-repeat"><div class="loading-row"><div class="spinner"></div></div></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Quiz geschiedenis</div>
+    <div id="p-history"><div class="loading-row"><div class="spinner"></div></div></div>
   </div>
 </div>
 
@@ -711,7 +753,7 @@ function updateCountdowns(){
   const hdc=document.getElementById('hero-days-dc');if(hdc)hdc.textContent=dDC>0?dDC:(dDC===0?'🎯':'✓');
   const hcc=document.getElementById('hero-days-cc');if(hcc)hcc.textContent=dCC>0?dCC:(dCC===0?'🎯':'✓');
 }
-updateCountdowns();
+updateCountdowns();updateStreakDisplay();
 
 const TABS=['dashboard','agenda','plan','upload','cards','quiz','essay','tutor','notes','progress','setup'];
 function showTab(name){
@@ -1024,6 +1066,8 @@ async function showResult(){
     </div>
   </div></div>`;
   await sb.from('quiz_sessions').insert({total:cards.length,correct,vak:quizSession.vak||null,mode:quizMode});
+  markStudiedToday();
+  if(pct>=80)setTimeout(launchConfetti,300);
 }
 async function continueQuiz(){
   const vak=quizSession.vak||'';
@@ -1189,18 +1233,112 @@ async function deleteNote(id){if(!confirm('Verwijderen?'))return;await sb.from('
 
 // ── Progress ──
 async function loadProgress(){
-  const{data:cards}=await sb.from('flashcards').select('*');const{data:sessions}=await sb.from('quiz_sessions').select('*');
-  if(!cards)return;const practiced=cards.filter(c=>c.practiced>0);const goodPct=practiced.length?Math.round(practiced.reduce((a,c)=>a+c.correct/c.practiced,0)/practiced.length*100):0;
-  document.getElementById('p-total').textContent=cards.length;document.getElementById('p-done').textContent=practiced.length;document.getElementById('p-good').textContent=goodPct+'%';document.getElementById('p-sessions').textContent=sessions?sessions.length:0;
+  const{data:cards}=await sb.from('flashcards').select('*');
+  const{data:sessions}=await sb.from('quiz_sessions').select('*').order('created_at',{ascending:true});
+  if(!cards)return;
+  const practiced=cards.filter(c=>c.practiced>0);
+  const goodPct=practiced.length?Math.round(practiced.reduce((a,c)=>a+c.correct/c.practiced,0)/practiced.length*100):0;
+  document.getElementById('p-total').textContent=cards.length;
+  document.getElementById('p-done').textContent=practiced.length;
+  document.getElementById('p-good').textContent=goodPct+'%';
+  document.getElementById('p-sessions').textContent=sessions?sessions.length:0;
   renderTopicBars('p-topics',cards);
   const weak=cards.filter(c=>c.practiced>0&&c.correct/c.practiced<0.5);
-  document.getElementById('p-repeat').innerHTML=weak.length?weak.slice(0,6).map(c=>{const s=scoreLabel(c.practiced,c.correct);return`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;align-items:center;gap:8px"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="flex:1">${c.question.slice(0,60)}…</span><span class="fc-score ${s.cls}" style="flex-shrink:0">${s.text}</span></div>`;}).join(''):'<div style="font-size:13px;color:var(--muted)">Niets te herhalen — geweldig!</div>';
+  document.getElementById('p-repeat').innerHTML=weak.length?weak.slice(0,6).map(c=>{const s=scoreLabel(c.practiced,c.correct);return`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;align-items:center;gap:8px"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="flex:1">${c.question.slice(0,60)}…</span><span class="fc-score ${s.cls}" style="flex-shrink:0">${s.text}</span></div>`;}).join(''):'<div style="font-size:13px;color:var(--muted)">Niets te herhalen — geweldig! 🎉</div>';
+  if(sessions){renderHeatmap(sessions);renderQuizHistory(sessions);}
 }
 
 // ── Setup ──
 async function checkConnection(){try{const{error}=await sb.from('flashcards').select('id').limit(1);document.getElementById('conn-status').innerHTML=error?`<span style="color:var(--red)">❌ ${error.message}</span>`:`<span style="color:var(--green)">✓ Verbonden</span>`;}catch(e){document.getElementById('conn-status').textContent='❌ Kan niet verbinden';}}
 async function testConnection(){const el=document.getElementById('conn-result');el.innerHTML='<div class="loading-row"><div class="spinner"></div>Testen...</div>';try{const{error}=await sb.from('flashcards').select('id').limit(1);el.innerHTML=error?`<span style="color:var(--red)">❌ ${error.message}</span>`:`<span style="color:var(--green)">✓ Alles werkt!</span>`;}catch(e){el.textContent='❌ '+e.message;}}
 async function deleteAll(){if(!confirm('Alle flashcards verwijderen?'))return;await sb.from('flashcards').delete().neq('id',0);toast('Verwijderd.');}
+
+// ── Streak ──
+function getStreak(){
+  const today=new Date().toISOString().slice(0,10);
+  const last=localStorage.getItem('streak_date');
+  let streak=parseInt(localStorage.getItem('streak_count')||'0');
+  if(!last)return 0;
+  const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+  const yStr=yesterday.toISOString().slice(0,10);
+  if(last===today||last===yStr)return streak;
+  localStorage.setItem('streak_count','0');return 0;
+}
+function markStudiedToday(){
+  const today=new Date().toISOString().slice(0,10);
+  const last=localStorage.getItem('streak_date');
+  if(last===today)return;
+  let streak=parseInt(localStorage.getItem('streak_count')||'0');
+  const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+  streak=(last===yesterday.toISOString().slice(0,10))?streak+1:1;
+  localStorage.setItem('streak_count',streak);
+  localStorage.setItem('streak_date',today);
+  const el=document.getElementById('hero-fire');if(el)el.textContent=streak;
+}
+function updateStreakDisplay(){
+  const el=document.getElementById('hero-fire');if(el)el.textContent=getStreak()||'0';
+}
+
+// ── Heatmap ──
+function renderHeatmap(sessions){
+  const counts={};
+  sessions.forEach(s=>{const d=(s.created_at||'').slice(0,10);if(d)counts[d]=(counts[d]||0)+(s.total||1);});
+  const today=new Date();
+  const cells=[];
+  for(let i=89;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);cells.push(d.toISOString().slice(0,10));}
+  const weeks=[];for(let i=0;i<cells.length;i+=7)weeks.push(cells.slice(i,i+7));
+  const html=weeks.map(week=>`<div class="heatmap-col">${week.map(d=>{
+    const c=counts[d]||0,lvl=c===0?0:c<3?1:c<6?2:c<10?3:4;
+    const dt=new Date(d+'T12:00:00').toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+    return`<div class="heatmap-cell${lvl?` heatmap-l${lvl}`:''}" title="${dt}: ${c} kaartjes geoefend"></div>`;
+  }).join('')}</div>`).join('');
+  document.getElementById('p-heatmap').innerHTML=`<div class="heatmap">${html}</div>`;
+  const leg=document.getElementById('heatmap-legend');
+  if(leg)leg.innerHTML=[0,1,2,3,4].map(l=>`<div class="heatmap-cell${l?` heatmap-l${l}`:''}"></div>`).join('');
+}
+
+// ── Quiz history ──
+function renderQuizHistory(sessions){
+  const el=document.getElementById('p-history');if(!el)return;
+  if(!sessions||!sessions.length){el.innerHTML='<div style="font-size:13px;color:var(--muted)">Nog geen sessies gespeeld.</div>';return;}
+  const recent=[...sessions].reverse().slice(0,20);
+  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 70px 80px 70px;gap:6px;padding:6px 0;font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)"><span>Datum & tijd</span><span>Vak</span><span>Kaartjes</span><span>Score</span></div>
+  ${recent.map(s=>{
+    const d=new Date(s.created_at).toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+    const t=new Date(s.created_at).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+    const pct=s.total?Math.round(s.correct/s.total*100):0;
+    const col=pct>=80?'var(--green)':pct>=60?'var(--amber)':'var(--red)';
+    const vak=s.vak?`<span class="tag tag-${s.vak==='CC'?'cc':'dc'}" style="font-size:10px">${s.vak}</span>`:'<span style="font-size:11px;color:var(--muted)">—</span>';
+    return`<div style="display:grid;grid-template-columns:1fr 70px 80px 70px;gap:6px;padding:7px 0;font-size:13px;border-bottom:1px solid var(--border);align-items:center"><span style="color:var(--muted)">${d} ${t}</span>${vak}<span>${s.correct}/${s.total}</span><span style="font-weight:600;color:${col}">${pct}%</span></div>`;
+  }).join('')}`;
+}
+
+// ── Confetti ──
+function launchConfetti(){
+  const canvas=document.getElementById('confetti-canvas');
+  canvas.style.display='block';canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const ctx=canvas.getContext('2d');
+  const colors=['#C4737A','#7E3AF2','#1A56DB','#4ABA8A','#F0B060'];
+  const parts=Array.from({length:130},()=>({x:Math.random()*canvas.width,y:-20,vx:(Math.random()-0.5)*5,vy:Math.random()*4+2,color:colors[Math.floor(Math.random()*colors.length)],size:Math.random()*9+4,rot:Math.random()*360,rotV:(Math.random()-0.5)*7,rect:Math.random()>0.4}));
+  let f=0;
+  (function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.06;p.rot+=p.rotV;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.color;ctx.globalAlpha=Math.max(0,1-f/110);if(p.rect){ctx.fillRect(-p.size/2,-p.size/4,p.size,p.size/2);}else{ctx.beginPath();ctx.arc(0,0,p.size/2,0,Math.PI*2);ctx.fill();}ctx.restore();});
+    f++;if(f<130)requestAnimationFrame(draw);else{canvas.style.display='none';}
+  })();
+}
+
+// ── Note templates ──
+const NOTE_TEMPLATES={
+  lecture:`<h3>📚 College aantekeningen</h3><p><strong>Datum:</strong>&nbsp;&nbsp;&nbsp;&nbsp;<strong>Docent:</strong>&nbsp;</p><hr><h3>Hoofdthema's</h3><ul><li></li><li></li><li></li></ul><h3>Kernbegrippen</h3><ul><li><strong>Begriff</strong> — definitie</li><li><strong>Begriff</strong> — definitie</li></ul><h3>Belangrijke argumenten / theorieën</h3><ol><li></li><li></li></ol><h3>Vragen &amp; onduidelijkheden</h3><ul><li></li></ul><h3>Link naar tentamen</h3><p></p>`,
+  artikel:`<h3>📄 Artikel samenvatting</h3><p><strong>Auteur(s):</strong>&nbsp;&nbsp;<strong>Jaar:</strong>&nbsp;&nbsp;<strong>Tijdschrift:</strong>&nbsp;</p><hr><h3>Hoofdargument / these</h3><p></p><h3>Methode</h3><p></p><h3>Bevindingen</h3><ol><li></li><li></li><li></li></ol><h3>Kritische noten</h3><ul><li></li></ul><h3>Bruikbaar voor tentamen omdat...</h3><p></p>`,
+  werkcollege:`<h3>💬 Werkcollege</h3><p><strong>Datum:</strong>&nbsp;&nbsp;<strong>Onderwerp:</strong>&nbsp;</p><hr><h3>Besproken teksten</h3><ul><li></li></ul><h3>Discussiepunten</h3><ol><li></li><li></li></ol><h3>Interessante standpunten</h3><ul><li></li></ul><h3>Eigen reflectie</h3><p></p><h3>To-do na dit college</h3><ul><li></li></ul>`
+};
+function applyNoteTemplate(type){
+  const el=document.getElementById('note-text');
+  if(el.innerHTML.replace(/<br>/g,'').trim()&&!confirm('Huidige tekst vervangen door template?'))return;
+  el.innerHTML=NOTE_TEMPLATES[type]||'';el.focus();
+}
 
 loadDashboard();
 if(typeof marked!=='undefined'){try{marked.use({breaks:true});}catch(e){try{marked.setOptions({breaks:true});}catch(e2){}}}
@@ -1451,7 +1589,7 @@ function pomSetDuration(min){
 Object.assign(window, {
   showTab, closeModal, saveEdit,
   dragOver, dragLeave, dropFile, handleFile,
-  toggleDarkMode, toggleSidebar, updateWordCount, cancelUpload,
+  toggleDarkMode, toggleSidebar, updateWordCount, cancelUpload, applyNoteTemplate, launchConfetti,
   generateCards, generateSummary,
   loadCards, editCard, deleteCard, explainNL, resetCard,
   updateSelectedCount, toggleSelectAll, deleteSelected, filterCards, openNoteForWeek, openCardsForWeek,
