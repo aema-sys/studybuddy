@@ -372,11 +372,15 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 <!-- FLASHCARDS -->
 <div id="tab-cards" style="display:none">
   <div class="page-header"><div class="page-title">Flashcards</div><div class="page-sub">Klik op een vraag voor het antwoord · gebruik 🇳🇱 voor uitleg in het Nederlands</div></div>
-  <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+  <div style="display:flex;gap:8px;margin-bottom:0.75rem;flex-wrap:wrap;align-items:center">
     <select id="f-vak" onchange="loadCards()" style="width:auto;flex:none"><option value="">Alle vakken</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
     <select id="f-week" onchange="loadCards()" style="width:auto;flex:none"><option value="">Alle thema's</option></select>
     <select id="f-type" onchange="loadCards()" style="width:auto;flex:none"><option value="">Alle typen</option><option value="slides">Slides</option><option value="artikel">Artikel</option><option value="reader">Reader</option></select>
-    <button class="btn btn-sm" onclick="loadCards()">↺ Vernieuwen</button>
+    <button class="btn btn-sm" onclick="loadCards()">↺</button>
+  </div>
+  <div style="margin-bottom:1rem;position:relative">
+    <input type="text" id="card-search" placeholder="🔍  Zoek op vraag of antwoord..." oninput="filterCards()" style="width:100%;padding-left:12px;font-size:13.5px"/>
+    <span id="search-count" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);pointer-events:none"></span>
   </div>
   <div id="bulk-bar" style="display:none;align-items:center;gap:8px;margin-bottom:0.75rem;padding:8px 12px;background:var(--amber-bg);border:1px solid var(--border2);border-radius:var(--radius-sm)">
     <input type="checkbox" id="select-all-cb" onchange="toggleSelectAll(this.checked)" style="width:15px;height:15px;cursor:pointer"/>
@@ -827,6 +831,7 @@ async function loadCards(){
         <button class="btn btn-sm" onclick="editCard(${c.id})">Bewerken</button>
         <button class="btn btn-sm btn-danger" onclick="deleteCard(${c.id})">Verwijderen</button>
         <button class="btn-nl btn" onclick="explainNL(${c.id})">Uitleg</button>
+        ${c.week?`<button class="btn btn-sm" onclick="openNoteForWeek('${c.vak}','${c.week.replace(/'/g,"\\'")}')" title="Aantekening voor ${c.week}" style="color:var(--muted)">📝</button>`:''}
         <button class="btn btn-sm" onclick="resetCard(${c.id})" title="Reset voortgang" style="color:var(--muted)">↺</button>
         <div style="margin-left:auto">${sc(c)}</div>
       </div>
@@ -836,6 +841,45 @@ function editCard(id){const c=window._cards.find(x=>x.id===id);if(!c)return;docu
 function closeModal(){document.getElementById('edit-modal').classList.remove('open');}
 async function saveEdit(){const id=document.getElementById('edit-id').value,q=document.getElementById('edit-q').value.trim(),a=document.getElementById('edit-a').value.trim();if(!q||!a){toast('Vul beide velden in.');return;}await sb.from('flashcards').update({question:q,answer:a}).eq('id',id);closeModal();toast('Bijgewerkt!');loadCards();}
 async function deleteCard(id){if(!confirm('Deze flashcard verwijderen?'))return;await sb.from('flashcards').delete().eq('id',id);toast('Verwijderd.');loadCards();}
+function filterCards(){
+  const q=document.getElementById('card-search').value.toLowerCase().trim();
+  const cards=document.querySelectorAll('.flashcard');
+  let visible=0;
+  cards.forEach(card=>{
+    if(!q){card.style.display='';visible++;return;}
+    const text=card.textContent.toLowerCase();
+    const match=text.includes(q);
+    card.style.display=match?'':'none';
+    if(match)visible++;
+  });
+  const ct=document.getElementById('search-count');
+  if(ct)ct.textContent=q?`${visible} resultaat${visible!==1?'en':''}`:'' ;
+}
+function openCardsForWeek(vak,week){
+  showTab('cards');
+  if(vak)document.getElementById('f-vak').value=vak;
+  // wait for loadCards to populate the week dropdown, then select it
+  loadCards().then(()=>{
+    setTimeout(()=>{
+      const sel=document.getElementById('f-week');
+      const opt=[...sel.options].find(o=>o.value===week);
+      if(opt){sel.value=week;loadCards();}
+    },300);
+  });
+  toast(`🃏 Flashcards voor ${week} geopend`);
+}
+function openNoteForWeek(vak,week){
+  showTab('notes');
+  document.getElementById('notes-filter-vak').value=vak||'';
+  loadNotes().then(()=>{
+    // open the first note matching this week
+    setTimeout(()=>{
+      const items=document.querySelectorAll('.note-item');
+      items.forEach(el=>{if(el.textContent.includes(week))el.classList.add('open');});
+    },300);
+  });
+  toast(`📝 Aantekening voor ${week} geopend`);
+}
 function updateSelectedCount(){const n=document.querySelectorAll('.fc-cb:checked').length;document.getElementById('selected-count').textContent=n+' geselecteerd';document.getElementById('select-all-cb').checked=n>0&&n===document.querySelectorAll('.fc-cb').length;}
 function toggleSelectAll(checked){document.querySelectorAll('.fc-cb').forEach(cb=>cb.checked=checked);updateSelectedCount();}
 async function deleteSelected(){const ids=[...document.querySelectorAll('.fc-cb:checked')].map(cb=>parseInt(cb.dataset.id));if(!ids.length){toast('Selecteer eerst kaartjes.');return;}if(!confirm(`${ids.length} flashcard${ids.length>1?'s':''} verwijderen?`))return;await sb.from('flashcards').delete().in('id',ids);toast(`✓ ${ids.length} flashcard${ids.length>1?'s':''} verwijderd.`);loadCards();}
@@ -1066,6 +1110,7 @@ async function loadNotes(){
         <div class="note-item-actions">
           <button class="btn btn-sm" onclick="editNote(${n.id});event.stopPropagation()">Bewerken</button>
           <button class="btn btn-sm btn-danger" onclick="deleteNote(${n.id});event.stopPropagation()">Verwijderen</button>
+          ${n.week?`<button class="btn btn-sm" onclick="openCardsForWeek('${n.vak||''}','${(n.week||'').replace(/'/g,"\\'")}');event.stopPropagation()" title="Flashcards voor ${n.week}" style="color:var(--muted);margin-left:auto">🃏 Kaartjes</button>`:''}
         </div>
       </div>
     </div>`;
@@ -1388,7 +1433,7 @@ Object.assign(window, {
   toggleDarkMode, toggleSidebar, updateWordCount, cancelUpload,
   generateCards, generateSummary,
   loadCards, editCard, deleteCard, explainNL, resetCard,
-  updateSelectedCount, toggleSelectAll, deleteSelected,
+  updateSelectedCount, toggleSelectAll, deleteSelected, filterCards, openNoteForWeek, openCardsForWeek,
   setMode, setTime, quickQuiz, setOrder,
   loadQuizWeeks, startQuiz,
   rateAnki, submitType, skipQ, nextQ,
