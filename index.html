@@ -162,7 +162,23 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 /* Notes */
 .note-editor-card{transition:all 0.2s ease;}
 .note-editor-card.fullscreen{position:fixed!important;inset:0!important;z-index:400!important;border-radius:0!important;border:none!important;padding:1.5rem 2rem!important;overflow-y:auto!important;}
-.note-editor-card.fullscreen textarea{min-height:calc(100vh - 260px)!important;}
+.note-editor-card.fullscreen .note-rte{min-height:calc(100vh - 260px)!important;}
+.note-rte{min-height:420px;border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;line-height:1.8;outline:none;background:var(--surface);color:var(--text);overflow-y:auto;cursor:text;}
+.note-rte:focus{border-color:var(--muted);box-shadow:0 0 0 2px rgba(0,0,0,0.04);}
+.note-rte:empty:before{content:attr(data-placeholder);color:var(--muted);pointer-events:none;}
+.note-rte h1,.note-rte h2,.note-rte h3{font-family:'Lora',serif;margin:0.6em 0 0.2em;color:var(--text);}
+.note-rte h3{font-size:16px;}
+.note-rte ul,.note-rte ol{margin:0.3em 0 0.3em 1.4em;padding:0;}
+.note-rte li{margin:2px 0;}
+.note-rte strong{font-weight:600;}
+.note-rte em{font-style:italic;}
+.note-rte hr{border:none;border-top:1px solid var(--border2);margin:0.75em 0;}
+.note-rte blockquote{border-left:3px solid var(--muted);margin:0.4em 0;padding:0.2em 0.75em;color:var(--muted);}
+.note-toolbar{display:flex;gap:3px;flex-wrap:wrap;padding:4px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);}
+.note-tb-btn{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:5px;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;transition:background 0.1s;}
+.note-tb-btn:hover{background:var(--border);}
+.note-tb-btn.active{background:var(--btn-primary-bg);color:var(--btn-primary-text);}
+.note-tb-sep{width:1px;background:var(--border);margin:2px 3px;}
 .note-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;cursor:pointer;transition:border-color 0.12s;}
 .note-item:hover{border-color:var(--border2);}
 .note-item-header{display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:12.5px;}
@@ -492,13 +508,21 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
         <select id="note-vak"><option value="">Kies vak...</option><option value="DC">Digital Crime</option><option value="CC">C&C</option></select>
         <input type="text" id="note-week" placeholder="Week / thema"/>
       </div>
-      <div style="display:flex;gap:4px">
-        <button class="btn btn-sm" onclick="wrapText('**','**')" title="Vet" style="font-weight:700;min-width:30px">B</button>
-        <button class="btn btn-sm" onclick="wrapText('*','*')" title="Cursief" style="font-style:italic;min-width:30px">I</button>
-        <button class="btn btn-sm" onclick="insertLinePrefix('## ')" title="Kopje" style="min-width:30px">H</button>
-        <button class="btn btn-sm" onclick="insertLinePrefix('- ')" title="Lijst" style="min-width:30px">—</button>
+      <div class="note-toolbar">
+        <button class="note-tb-btn" onmousedown="rteCmd(event,'bold')" title="Vet (Ctrl+B)"><strong>B</strong></button>
+        <button class="note-tb-btn" onmousedown="rteCmd(event,'italic')" title="Cursief (Ctrl+I)"><em>I</em></button>
+        <button class="note-tb-btn" onmousedown="rteCmd(event,'underline')" title="Onderstrepen"><u>U</u></button>
+        <div class="note-tb-sep"></div>
+        <button class="note-tb-btn" onmousedown="rteCmd(event,'formatBlock','h3')" title="Kopje">H</button>
+        <button class="note-tb-btn" onmousedown="rteCmd(event,'insertUnorderedList')" title="Opsomming">• lijst</button>
+        <button class="note-tb-btn" onmousedown="rteCmd(event,'insertOrderedList')" title="Genummerde lijst">1. lijst</button>
+        <div class="note-tb-sep"></div>
+        <button class="note-tb-btn" onmousedown="rteCmd(event,'insertHorizontalRule')" title="Scheidingslijn">—</button>
+        <button class="note-tb-btn" onmousedown="rteCmd(event,'formatBlock','blockquote')" title="Citaat">" citaat</button>
+        <div class="note-tb-sep"></div>
+        <button class="note-tb-btn" onmousedown="rteCmd(event,'removeFormat')" title="Opmaak verwijderen" style="color:var(--muted);font-size:11px">✕ opmaak</button>
       </div>
-      <textarea id="note-text" placeholder="Schrijf hier je aantekening... (ondersteunt **vet**, *cursief*, ## kopje, - lijst)" style="min-height:420px;resize:vertical;font-size:14px;line-height:1.75"></textarea>
+      <div id="note-text" class="note-rte" contenteditable="true" data-placeholder="Schrijf hier je aantekening... Gebruik de knoppen hierboven voor opmaak."></div>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <button class="btn btn-sm" id="note-cancel-btn" onclick="cancelEditNote()" style="display:none;color:var(--muted)">✕ Annuleer bewerken</button>
         <button id="note-save-btn" class="btn btn-primary" onclick="saveNote()" style="margin-left:auto">Opslaan →</button>
@@ -1072,7 +1096,7 @@ function askExample(q){document.getElementById('chat-input').value=q;sendChat();
 let _allNotes=[],_editId=null;
 
 async function saveNote(){
-  const vak=document.getElementById('note-vak').value,week=document.getElementById('note-week').value.trim(),content=document.getElementById('note-text').value.trim();
+  const vak=document.getElementById('note-vak').value,week=document.getElementById('note-week').value.trim(),content=document.getElementById('note-text').innerHTML.trim();
   if(!content){toast('Schrijf eerst iets.');return;}
   if(_editId){
     const{error}=await sb.from('notes').update({vak:vak||null,week:week||null,content}).eq('id',_editId);
@@ -1086,7 +1110,7 @@ async function saveNote(){
     if(error){toast('Fout: '+error.message);return;}
     toast('✓ Opgeslagen!');
   }
-  document.getElementById('note-text').value='';
+  document.getElementById('note-text').innerHTML='';
   document.getElementById('note-week').value='';
   document.getElementById('note-vak').value='';
   loadNotes();
@@ -1103,7 +1127,8 @@ async function loadNotes(){
     const dateStr=new Date(n.created_at).toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
     const title=(n.week||'Zonder titel');
     const vakTag=n.vak?`<span class="tag tag-${n.vak==='CC'?'cc':'dc'}" style="font-size:10px;padding:1px 5px">${n.vak}</span>`:'';
-    const rendered=typeof marked!=='undefined'?marked.parse(n.content):n.content.replace(/\n/g,'<br>');
+    const isHtml=/<[a-z][\s\S]*>/i.test(n.content);
+    const rendered=isHtml?n.content:(typeof marked!=='undefined'?marked.parse(n.content):n.content.replace(/\n/g,'<br>'));
     return`<div class="note-item" id="ni-${n.id}" onclick="toggleNoteItem(${n.id},event)">
       <div class="note-item-header">${vakTag}<span class="note-item-title">${title}</span><span class="note-item-date">${dateStr}</span><span class="note-item-chevron">▾</span></div>
       <div class="note-item-body"><div class="markdown-body">${rendered}</div>
@@ -1128,19 +1153,22 @@ function editNote(id){
   if(!n)return;
   document.getElementById('note-vak').value=n.vak||'';
   document.getElementById('note-week').value=n.week||'';
-  document.getElementById('note-text').value=n.content;
+  // Load content: HTML (new) or markdown (old notes)
+  const el=document.getElementById('note-text');
+  const isHtml=/<[a-z][\s\S]*>/i.test(n.content);
+  el.innerHTML=isHtml?n.content:(typeof marked!=='undefined'?marked.parse(n.content):n.content);
   _editId=id;
   document.getElementById('note-save-btn').textContent='Bijwerken →';
   document.getElementById('note-editor-label').textContent='Aantekening bewerken';
   document.getElementById('note-cancel-btn').style.display='inline-flex';
-  document.getElementById('note-text').scrollIntoView({behavior:'smooth',block:'center'});
-  document.getElementById('note-text').focus();
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  el.focus();
   toast('Pas de tekst aan en klik Bijwerken →');
 }
 
 function cancelEditNote(){
   _editId=null;
-  document.getElementById('note-text').value='';
+  document.getElementById('note-text').innerHTML='';
   document.getElementById('note-week').value='';
   document.getElementById('note-vak').value='';
   document.getElementById('note-save-btn').textContent='Opslaan →';
@@ -1262,20 +1290,13 @@ async function loadHeroStreak() {
 loadHeroStreak();
 
 // ── Aantekeningen opmaak ──
-function wrapText(before, after){
-  const ta=document.getElementById('note-text');
-  const s=ta.selectionStart,e=ta.selectionEnd;
-  const sel=ta.value.substring(s,e)||'tekst';
-  ta.value=ta.value.substring(0,s)+before+sel+after+ta.value.substring(e);
-  ta.focus();ta.setSelectionRange(s+before.length,s+before.length+sel.length);
+function rteCmd(e,cmd,val){
+  e.preventDefault();
+  document.getElementById('note-text').focus();
+  document.execCommand(cmd,false,val||null);
 }
-function insertLinePrefix(prefix){
-  const ta=document.getElementById('note-text');
-  const s=ta.selectionStart;
-  const lineStart=ta.value.lastIndexOf('\n',s-1)+1;
-  ta.value=ta.value.substring(0,lineStart)+prefix+ta.value.substring(lineStart);
-  ta.focus();ta.setSelectionRange(s+prefix.length,s+prefix.length);
-}
+function wrapText(){} // legacy stub - no longer needed
+function insertLinePrefix(){} // legacy stub
 
 // ── Sidebar thema's ──
 async function loadSidebarThemes(){
@@ -1440,7 +1461,7 @@ Object.assign(window, {
   continueQuiz, restartQuiz,
   generateEssayQuestion, submitEssay, quizExplainNL,
   sendChat, askExample,
-  saveNote, loadNotes, editNote, deleteNote, cancelEditNote, toggleNoteItem, toggleNoteFullscreen,
+  saveNote, loadNotes, editNote, deleteNote, cancelEditNote, toggleNoteItem, toggleNoteFullscreen, rteCmd,
   wrapText, insertLinePrefix,
   testConnection, deleteAll,
   agendaNav, addEvent, deleteEvent,
