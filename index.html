@@ -175,11 +175,12 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 .note-rte hr{border:none;border-top:1px solid var(--border2);margin:0.75em 0;}
 .note-rte blockquote{border-left:3px solid var(--muted);margin:0.4em 0;padding:0.2em 0.75em;color:var(--muted);}
 .cornell-grid{display:grid;grid-template-columns:1fr 220px;gap:0;border:1px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden;margin:0.5em 0;}
-.cornell-notes{padding:10px 12px;min-height:280px;border-right:1px solid var(--border2);text-transform:none;}
-.cornell-cues{padding:10px 12px;min-height:280px;background:var(--bg);text-transform:none;}
-.cornell-label{font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;user-select:none;pointer-events:none;}
-.cornell-summary{border-top:2px solid var(--border2);padding:10px 12px;background:var(--bg2);text-transform:none;}
+.cornell-notes{padding:10px 12px;min-height:280px;border-right:1px solid var(--border2);}
+.cornell-cues{padding:10px 12px;min-height:280px;background:var(--bg);}
+.cornell-label{font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;user-select:none;pointer-events:none;display:block;}
+.cornell-summary{border-top:2px solid var(--border2);padding:10px 12px;background:var(--bg2);}
 .cornell-summary .cornell-label{margin-bottom:4px;}
+.cornell-notes *:not(.cornell-label),.cornell-cues *:not(.cornell-label),.cornell-summary *:not(.cornell-label){text-transform:none!important;letter-spacing:normal;}
 .note-toolbar{display:flex;gap:3px;flex-wrap:wrap;padding:4px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);}
 .note-tb-btn{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:5px;font-size:13px;color:var(--text);font-family:'Inter',sans-serif;transition:background 0.1s;}
 .note-tb-btn:hover{background:var(--border);}
