@@ -83,19 +83,19 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 .quiz-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);}
 .quiz-q{font-family:'Lora',serif;font-size:20px;color:var(--text);line-height:1.5;margin:0.875rem 0 1.5rem;}
 .feedback-box{border-radius:var(--radius-sm);padding:0.875rem 1rem;margin-top:0.875rem;font-size:13px;line-height:1.6;}
-.fb-good{background:var(--green-bg);color:#03543F;border:1px solid #84E1BC;}
-.fb-ok{background:var(--amber-bg);color:#78350F;border:1px solid #F6D860;}
-.fb-bad{background:var(--red-bg);color:#771D1D;border:1px solid #F8B4B4;}
+.fb-good{background:var(--green-bg);color:var(--green);border:1px solid var(--green);}
+.fb-ok{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber);}
+.fb-bad{background:var(--red-bg);color:var(--red);border:1px solid var(--red);}
 .model-ans{font-size:12.5px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
 .anki-answer{display:none;background:var(--bg);border-radius:var(--radius-sm);padding:1rem;margin-top:1rem;font-size:13.5px;line-height:1.6;border:1px solid var(--border);}
 .anki-answer.visible{display:block;}
 .anki-hint{font-size:13px;color:var(--muted);text-align:center;padding:1.5rem 0 0.5rem;}
 .rating-row{display:flex;gap:8px;margin-top:1rem;}
 .rating-btn{flex:1;padding:10px 4px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:12px;cursor:pointer;background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;transition:all 0.12s;text-align:center;line-height:1.3;}
-.rating-btn.r1:hover{background:var(--red-bg);border-color:#F8B4B4;color:var(--red);}
-.rating-btn.r2:hover{background:#FEF3C7;border-color:#F6D860;color:var(--amber);}
-.rating-btn.r3:hover{background:#FEF9C3;border-color:#FDE047;color:#713F12;}
-.rating-btn.r4:hover,.rating-btn.r5:hover{background:var(--green-bg);border-color:#86EFAC;color:var(--green);}
+.rating-btn.r1:hover{background:var(--red-bg);border-color:var(--red);color:var(--red);}
+.rating-btn.r2:hover{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);}
+.rating-btn.r3:hover{background:var(--amber-bg);border-color:var(--amber);color:var(--amber);}
+.rating-btn.r4:hover,.rating-btn.r5:hover{background:var(--green-bg);border-color:var(--green);color:var(--green);}
 .rating-label{font-size:10px;display:block;margin-top:2px;opacity:0.8;}
 .mode-toggle{display:flex;gap:8px;margin-bottom:1.25rem;}
 .mode-btn{flex:1;padding:10px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;background:var(--surface);color:var(--muted);font-family:'Inter',sans-serif;text-align:center;transition:all 0.12s;}
@@ -154,6 +154,11 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;}
 .sql-box{background:#1A1A18;color:#d4d4c8;font-family:'Courier New',monospace;font-size:12px;padding:1rem;border-radius:var(--radius-sm);line-height:1.8;overflow-x:auto;white-space:pre;}
 @media(max-width:768px){.sidebar{display:none;}.main{margin-left:0;padding:1rem;max-width:100vw;}.stats-row{grid-template-columns:repeat(2,1fr);}.fc-grid{grid-template-columns:1fr;}}
+/* Dark mode overrides for hardcoded colors */
+.hero-stat{background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px;}
+[data-theme="dark"] #dash-hero{background:linear-gradient(135deg,var(--pink-bg) 0%,var(--bg2) 50%,var(--cc-bg) 100%)!important;}
+[data-theme="dark"] .hero-stat{background:rgba(0,0,0,0.25)!important;}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) #dash-hero{background:linear-gradient(135deg,var(--pink-bg) 0%,var(--bg2) 50%,var(--cc-bg) 100%)!important;}:root:not([data-theme="light"]) .hero-stat{background:rgba(0,0,0,0.25)!important;}}
 </style>
 </head>
 <body>
@@ -239,19 +244,19 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
     <div style="font-family:'Lora',serif;font-size:24px;color:var(--text);line-height:1.3;margin-bottom:0.3rem" id="hero-greeting"></div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:1.25rem" id="hero-quote"></div>
     <div style="display:flex;gap:1rem;flex-wrap:wrap">
-      <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px">
+      <div class="hero-stat">
         <div style="font-family:'Lora',serif;font-size:22px;color:var(--pink)" id="hero-days-dc">—</div>
         <div style="font-size:11px;color:var(--muted)">dagen tot DC</div>
       </div>
-      <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px">
-        <div style="font-family:'Lora',serif;font-size:22px;color:#7E3AF2" id="hero-days-cc">—</div>
+      <div class="hero-stat">
+        <div style="font-family:'Lora',serif;font-size:22px;color:var(--cc)" id="hero-days-cc">—</div>
         <div style="font-size:11px;color:var(--muted)">dagen tot C&C</div>
       </div>
-      <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px">
+      <div class="hero-stat">
         <div style="font-family:'Lora',serif;font-size:22px;color:var(--text)" id="hero-streak">—</div>
         <div style="font-size:11px;color:var(--muted)">kaartjes vandaag</div>
       </div>
-      <div style="background:rgba(255,255,255,0.7);border-radius:10px;padding:0.6rem 1rem;flex:1;min-width:100px">
+      <div class="hero-stat">
         <div style="font-family:'Lora',serif;font-size:22px;color:var(--text)" id="hero-mastered">—</div>
         <div style="font-size:11px;color:var(--muted)">% beheerst</div>
       </div>
@@ -319,7 +324,7 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
     </div>
 
     <!-- Waarschuwing lange tekst -->
-    <div id="length-warning" style="display:none;margin-top:8px;padding:10px 14px;background:var(--amber-bg);border:1px solid #F6D860;border-radius:var(--radius-sm);font-size:13px;color:#78350F;line-height:1.6">
+    <div id="length-warning" style="display:none;margin-top:8px;padding:10px 14px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--radius-sm);font-size:13px;color:var(--amber);line-height:1.6">
       <strong>Deze tekst is erg lang.</strong> Voor de beste kwaliteit adviseer ik de PDF te splitsen en in twee delen te uploaden. Gebruik dezelfde weeknaam voor beide uploads — de kaartjes worden dan automatisch samengevoegd in de flashcard-weergave.
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn btn-sm" onclick="cancelUpload()" style="border-color:#F6D860">Annuleer &amp; wis tekst</button>
@@ -372,7 +377,7 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
       <div class="card-title">Volgorde</div>
       <div style="display:flex;gap:8px;margin-bottom:1rem">
         <button class="btn btn-sm active" id="order-random" style="flex:1;background:var(--text);color:#fff;border-color:var(--text)" onclick="setOrder('random',this)">Door elkaar</button>
-        <button class="btn btn-sm" id="order-prog" style="flex:1" onclick="setOrder('progressive',this)">Progressief (1→20)</button>
+        <button class="btn btn-sm" id="order-prog" style="flex:1" onclick="setOrder('progressive',this)">Progressief (begin→einde)</button>
       </div>
       <div class="card-title">Beschikbare tijd</div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1.25rem">
@@ -760,7 +765,7 @@ async function loadCards(){
     <div class="flashcard" id="fc-${c.id}">
       <div class="fc-meta">
         <input type="checkbox" class="fc-cb" data-id="${c.id}" onchange="updateSelectedCount()" style="width:14px;height:14px;cursor:pointer;flex-shrink:0"/>
-        <span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span>${c.mat_type==='artikel'?'<span class="tag" style="background:#FDF4E7;color:#92400E">artikel</span>':''}<span style="font-size:11px;color:var(--muted)">${c.week} · ${c.theme}</span></div>
+        <span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span>${c.mat_type==='artikel'?'<span class="tag" style="background:var(--amber-bg);color:var(--amber)">artikel</span>':''}<span style="font-size:11px;color:var(--muted)">${c.week} · ${c.theme}</span></div>
       <div class="fc-q" onclick="document.getElementById('fca-${c.id}').classList.toggle('open')">${c.question}</div>
       <div class="fc-a" id="fca-${c.id}">${c.answer}</div>
       <div class="fc-nl" id="fcnl-${c.id}"></div>
@@ -933,7 +938,7 @@ async function quizExplainNL(cardId){
   const elId='quiz-nl-'+cardId;const el=document.getElementById(elId);if(!el)return;
   if(el.textContent&&el.style.display!=='none'){el.style.display='none';return;}
   el.style.display='block';el.textContent='Uitleg laden...';
-  el.style.cssText='display:block;background:var(--amber-bg);border-radius:var(--radius-sm);padding:0.75rem;margin-top:0.75rem;font-size:13px;line-height:1.6;color:#78350F;border:1px solid #F6D860;';
+  el.style.cssText='display:block;background:var(--amber-bg);border-radius:var(--radius-sm);padding:0.75rem;margin-top:0.75rem;font-size:13px;line-height:1.6;color:var(--amber);border:1px solid var(--amber);';
   try{const raw=await ai(`Leg het volgende concept uit in het Nederlands, begrijpelijk voor een masterstudent. Kort (2-4 zinnen), geen onnodig jargon.
 
 Concept: ${c.question}
