@@ -869,6 +869,41 @@ Material:\n${text.slice(0,8000)}`;
   catch(err){toast('Fout: '+err.message);}
   finally{document.getElementById('gen-loading').style.display='none';document.getElementById('gen-btn').disabled=false;}
 }
+async function generateCardsFromNote(id){
+  const n=_allNotes.find(x=>x.id===id);
+  if(!n){toast('Note niet gevonden.');return;}
+  // Strip HTML to plain text
+  const tmp=document.createElement('div');tmp.innerHTML=n.content;
+  const text=tmp.textContent||tmp.innerText||'';
+  if(!text.trim()){toast('Deze aantekening heeft geen tekst.');return;}
+  if(!n.vak){toast('Kies eerst een vak voor deze aantekening (bewerk de note).');return;}
+  const words=text.trim().split(/\s+/).length;
+  const count=words<1500?15:words<3000?20:words<5000?25:30;
+  const btn=document.getElementById(`note-gen-btn-${id}`);
+  if(btn){btn.disabled=true;btn.textContent='Bezig...';}
+  const vak=n.vak,week=n.week||'Onbekend';
+  const prompt=`You are a study coach for a Master's student in Crisis & Security Management at Leiden University.
+Course: ${vak==='DC'?'Digital Crime (DC)':'Conflict & Cooperation in Cyberspace (C&C)'}. Week/theme: ${week}. Material type: notes.
+Generate exactly ${count} flashcards. Return ONLY a valid JSON array, no markdown:
+[{"q":"...","a":"...","theme":"Short theme label"}]
+Rules:
+- Language: English only
+- Answers: clear and concise, 1-3 short sentences
+- Vary types: definitions, causes, consequences, comparisons, examples
+- For C&C include 3+ analytical questions
+- Stay faithful to the source material only
+- Do not repeat concepts, cover broadly
+Material:\n${text.slice(0,8000)}`;
+  try{
+    const raw=await ai(prompt,2500);
+    const parsed=parseJSON(raw);
+    const rows=parsed.map(c=>({vak,week,theme:c.theme||week,question:c.q,answer:c.a,mat_type:'notes'}));
+    const{error}=await sb.from('flashcards').insert(rows);
+    if(error)throw new Error(error.message);
+    toast(`✓ ${rows.length} flashcards aangemaakt van "${week}"!`);
+  }catch(err){toast('Fout: '+err.message);}
+  finally{if(btn){btn.disabled=false;btn.textContent='+ Flashcards';}}
+}
 async function generateSummary(){
   const text=document.getElementById('up-text').value.trim(),vak=document.getElementById('up-vak').value,week=document.getElementById('up-week').value;
   if(!text){toast('Voeg eerst tekst toe.');return;}
@@ -1187,7 +1222,8 @@ async function loadNotes(){
         <div class="note-item-actions">
           <button class="btn btn-sm" onclick="editNote(${n.id});event.stopPropagation()">Bewerken</button>
           <button class="btn btn-sm btn-danger" onclick="deleteNote(${n.id});event.stopPropagation()">Verwijderen</button>
-          ${n.week?`<button class="btn btn-sm" onclick="openCardsForWeek('${n.vak||''}','${(n.week||'').replace(/'/g,"\\'")}');event.stopPropagation()" title="Flashcards voor ${n.week}" style="color:var(--muted);margin-left:auto">🃏 Kaartjes</button>`:''}
+          ${n.week?`<button class="btn btn-sm" onclick="openCardsForWeek('${n.vak||''}','${(n.week||'').replace(/'/g,"\\'")}');event.stopPropagation()" title="Flashcards voor ${n.week}" style="color:var(--muted)">Kaartjes</button>`:''}
+          <button class="btn btn-sm btn-primary" id="note-gen-btn-${n.id}" onclick="generateCardsFromNote(${n.id});event.stopPropagation()" style="margin-left:auto">+ Flashcards</button>
         </div>
       </div>
     </div>`;
@@ -1608,7 +1644,7 @@ Object.assign(window, {
   continueQuiz, restartQuiz,
   generateEssayQuestion, submitEssay, quizExplainNL,
   sendChat, askExample,
-  saveNote, loadNotes, editNote, deleteNote, cancelEditNote, toggleNoteItem, toggleNoteFullscreen, rteCmd,
+  saveNote, loadNotes, editNote, deleteNote, cancelEditNote, toggleNoteItem, toggleNoteFullscreen, rteCmd, generateCardsFromNote,
   wrapText, insertLinePrefix,
   testConnection, deleteAll,
   agendaNav, addEvent, deleteEvent,
