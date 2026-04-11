@@ -445,8 +445,9 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
     <div id="quiz-setup" class="card">
       <div class="card-title">Modus kiezen</div>
       <div class="mode-toggle">
-        <button class="mode-btn active" id="mode-type" onclick="setMode('type')">✍ Antwoord typen<br/><span style="font-size:11px;opacity:0.7">AI geeft feedback</span></button>
-        <button class="mode-btn" id="mode-anki" onclick="setMode('anki')">Zelf beoordelen<br/><span style="font-size:11px;opacity:0.7">Denk na → spatie → 1-5</span></button>
+        <button class="mode-btn active" id="mode-type-ai" onclick="setMode('type-ai')">✍ AI-check<br/><span style="font-size:11px;opacity:0.7">AI beoordeelt jouw antwoord</span></button>
+        <button class="mode-btn" id="mode-type-self" onclick="setMode('type-self')">✍ Zelf-check<br/><span style="font-size:11px;opacity:0.7">Typ en beoordeel zelf</span></button>
+        <button class="mode-btn" id="mode-anki" onclick="setMode('anki')">Kaartjes<br/><span style="font-size:11px;opacity:0.7">Denk na → 1-5 beoordelen</span></button>
       </div>
       <select id="q-vak" style="margin-bottom:0.5rem" onchange="loadQuizWeeks()"><option value="">Beide vakken</option><option value="DC">Alleen Digital Crime</option><option value="CC">Alleen C&C</option></select>
       <select id="q-week" style="margin-bottom:1rem"><option value="">Alle lectures</option></select>
@@ -727,7 +728,7 @@ const SUPABASE_KEY=import.meta.env.VITE_SUPABASE_KEY;
 const ANTHROPIC_KEY=import.meta.env.VITE_ANTHROPIC_KEY;
 const AH={'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let quizMode='type',selectedTime=15,quizSession={cards:[],idx:0,answered:false,correct:0};
+let quizMode='type-ai',selectedTime=15,quizSession={cards:[],idx:0,answered:false,correct:0};
 let chatHistory=[];
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
@@ -1003,7 +1004,7 @@ async function explainNL(id){
 }
 
 // ── Quiz ──
-function setMode(m){quizMode=m;document.getElementById('mode-type').classList.toggle('active',m==='type');document.getElementById('mode-anki').classList.toggle('active',m==='anki');}
+function setMode(m){quizMode=m;['type-ai','type-self','anki'].forEach(x=>{const el=document.getElementById('mode-'+x);if(el)el.classList.toggle('active',m===x);});}
 function setTime(btn){document.querySelectorAll('[data-min]').forEach(b=>{b.style.background='';b.style.color='';b.style.borderColor='';});btn.style.background='var(--btn-primary-bg)';btn.style.color='var(--btn-primary-text)';btn.style.borderColor='var(--btn-primary-bg)';selectedTime=parseInt(btn.dataset.min);}
 function quickQuiz(vak){document.getElementById('q-vak').value=vak;showTab('quiz');setTimeout(startQuiz,150);}
 function updateLiveStats(){document.getElementById('quiz-live-stats').innerHTML=`<div style="display:flex;gap:16px"><div><div style="font-size:20px;font-weight:500">${quizSession.correct}</div><div style="color:var(--muted)">Goed</div></div><div><div style="font-size:20px;font-weight:500">${quizSession.idx}</div><div style="color:var(--muted)">Gedaan</div></div><div><div style="font-size:20px;font-weight:500">${quizSession.cards.length}</div><div style="color:var(--muted)">Totaal</div></div></div>`;}
@@ -1070,6 +1071,8 @@ async function startQuiz(){
 }
 function renderQuestion(){const{cards,idx}=quizSession;if(idx>=cards.length){showResult();return;}const c=cards[idx],pct=Math.round(idx/cards.length*100);if(quizMode==='anki')renderAnki(c,pct);else renderType(c,pct);}
 function renderType(c,pct){
+  const isAI=quizMode==='type-ai';
+  const submitFn=isAI?'submitType()':'submitTypeSelf()';
   document.getElementById('quiz-play').innerHTML=`<div class="quiz-wrap">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
       <button class="btn btn-sm" onclick="restartQuiz()" style="color:var(--muted);font-size:12px">← Terug</button>
@@ -1084,10 +1087,13 @@ function renderType(c,pct){
         <span id="ai-hint-text"></span>
       </div>
       <div style="display:flex;gap:8px;justify-content:space-between;margin-top:10px;flex-wrap:wrap">
-        <button class="btn btn-sm" id="hint-trigger-btn" onclick="getAIHint(${c.id})" style="color:var(--muted)">Hint</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" id="hint-trigger-btn" onclick="getAIHint(${c.id})" style="color:var(--muted)">Hint</button>
+          <button class="btn btn-sm" onclick="dontKnow()" style="color:var(--muted)">Weet ik niet</button>
+        </div>
         <div style="display:flex;gap:8px">
           <button class="btn" onclick="skipQ()">Overslaan</button>
-          <button class="btn btn-primary" onclick="submitType()">Controleer →</button>
+          <button class="btn btn-primary" onclick="${submitFn}">Controleer →</button>
         </div>
       </div>
       <div id="fb"></div>
@@ -1147,6 +1153,47 @@ async function continueQuiz(){
   updateLiveStats();renderQuestion();
 }
 function restartQuiz(){document.getElementById('quiz-setup').style.display='block';document.getElementById('quiz-play').style.display='none';}
+
+// Zelf-check modus: toon modelantwoord, laat gebruiker zelf beoordelen
+function submitTypeSelf(){
+  if(quizSession.answered)return;
+  const c=quizSession.cards[quizSession.idx];
+  const ans=document.getElementById('ans').value.trim();
+  quizSession.answered=true;
+  document.getElementById('fb').innerHTML=`
+    <div class="model-ans" style="margin-top:12px"><strong>Modelantwoord:</strong> ${c.answer}</div>
+    <div style="font-size:13px;color:var(--muted);margin:10px 0">Was jouw antwoord correct?</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn-nl" onclick="quizExplainNL(${c.id})">Uitleg in NL</button>
+      <button class="btn" onclick="rateSelf(false,${c.id})" style="border-color:#c0392b;color:#c0392b">✗ Fout</button>
+      <button class="btn btn-primary" onclick="rateSelf(true,${c.id})">✓ Goed</button>
+    </div>
+    <div id="quiz-nl-${c.id}"></div>`;
+}
+async function rateSelf(correct,cardId){
+  const c=quizSession.cards[quizSession.idx];
+  await sb.from('flashcards').update({practiced:c.practiced+1,correct:c.correct+(correct?1:0)}).eq('id',cardId);
+  if(correct)quizSession.correct++;
+  updateLiveStats();nextQ();
+}
+
+// Weet ik niet: toon antwoord, zet kaart achteraan de wachtrij
+async function dontKnow(){
+  if(quizSession.answered)return;
+  const c=quizSession.cards[quizSession.idx];
+  quizSession.answered=true;
+  await sb.from('flashcards').update({practiced:c.practiced+1,correct:c.correct}).eq('id',c.id);
+  document.getElementById('fb').innerHTML=`
+    <div class="model-ans" style="margin-top:12px"><strong>Antwoord:</strong> ${c.answer}</div>
+    <div style="font-size:13px;color:var(--muted);margin:8px 0">Dit kaartje komt later terug.</div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-primary" onclick="nextQ()">Volgende →</button>
+    </div>`;
+  // Kaart achteraan de rij zetten
+  quizSession.cards.push(c);
+  updateLiveStats();
+}
+
 async function getAIHint(cardId){
   const c=quizSession.cards.find(x=>x.id===cardId)||quizSession.cards[quizSession.idx];
   const btn=document.getElementById('hint-trigger-btn');
@@ -1679,7 +1726,7 @@ Object.assign(window, {
   updateSelectedCount, toggleSelectAll, deleteSelected, filterCards, openNoteForWeek, openCardsForWeek,
   setMode, setTime, quickQuiz, setOrder,
   loadQuizWeeks, startQuiz,
-  rateAnki, submitType, skipQ, nextQ,
+  rateAnki, submitType, submitTypeSelf, rateSelf, dontKnow, skipQ, nextQ,
   continueQuiz, restartQuiz, getAIHint,
   generateEssayQuestion, submitEssay, quizExplainNL,
   sendChat, askExample,
