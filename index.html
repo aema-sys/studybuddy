@@ -1167,15 +1167,20 @@ function submitTypeSelf(){
     <div style="font-size:13px;color:var(--muted);margin:10px 0">Was jouw antwoord correct?</div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
       <button class="btn btn-nl" onclick="quizExplainNL(${c.id})">Uitleg in NL</button>
-      <button class="btn" onclick="rateSelf(false,${c.id})" style="border-color:#c0392b;color:#c0392b">✗ Fout</button>
-      <button class="btn btn-primary" onclick="rateSelf(true,${c.id})">✓ Goed</button>
+      <button class="btn" onclick="rateSelf('bad',${c.id})" style="border-color:#c0392b;color:#c0392b">✗ Fout</button>
+      <button class="btn" onclick="rateSelf('half',${c.id})" style="border-color:#e67e22;color:#e67e22">~ Gedeeltelijk</button>
+      <button class="btn btn-primary" onclick="rateSelf('good',${c.id})">✓ Goed</button>
     </div>
     <div id="quiz-nl-${c.id}"></div>`;
 }
-async function rateSelf(correct,cardId){
+async function rateSelf(score,cardId){
   const c=quizSession.cards[quizSession.idx];
-  await sb.from('flashcards').update({practiced:c.practiced+1,correct:c.correct+(correct?1:0)}).eq('id',cardId);
-  if(correct)quizSession.correct++;
+  const add=score==='good'?1:score==='half'?0.5:0;
+  await sb.from('flashcards').update({practiced:c.practiced+1,correct:c.correct+add}).eq('id',cardId);
+  if(score==='good')quizSession.correct++;
+  else if(score==='half'){quizSession.correct+=0.5;}
+  // Bij gedeeltelijk: kaart komt later terug
+  if(score==='half')quizSession.cards.push(c);
   updateLiveStats();nextQ();
 }
 
