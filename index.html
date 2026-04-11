@@ -446,14 +446,14 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
       <div class="card-title">Modus kiezen</div>
       <div class="mode-toggle">
         <button class="mode-btn active" id="mode-type" onclick="setMode('type')">✍ Antwoord typen<br/><span style="font-size:11px;opacity:0.7">AI geeft feedback</span></button>
-        <button class="mode-btn" id="mode-anki" onclick="setMode('anki')">🧠 Zelf beoordelen<br/><span style="font-size:11px;opacity:0.7">Denk na → spatie → 1-5</span></button>
+        <button class="mode-btn" id="mode-anki" onclick="setMode('anki')">Zelf beoordelen<br/><span style="font-size:11px;opacity:0.7">Denk na → spatie → 1-5</span></button>
       </div>
       <select id="q-vak" style="margin-bottom:0.5rem" onchange="loadQuizWeeks()"><option value="">Beide vakken</option><option value="DC">Alleen Digital Crime</option><option value="CC">Alleen C&C</option></select>
       <select id="q-week" style="margin-bottom:1rem"><option value="">Alle lectures</option></select>
       <div class="card-title">Volgorde</div>
       <div style="display:flex;gap:8px;margin-bottom:1rem">
-        <button class="btn btn-sm active" id="order-random" style="flex:1;background:var(--btn-primary-bg);color:var(--btn-primary-text);border-color:var(--btn-primary-bg)" onclick="setOrder('random',this)">Door elkaar</button>
         <button class="btn btn-sm" id="order-prog" style="flex:1" onclick="setOrder('progressive',this)">Progressief (begin→einde)</button>
+        <button class="btn btn-sm active" id="order-random" style="flex:1;background:var(--btn-primary-bg);color:var(--btn-primary-text);border-color:var(--btn-primary-bg)" onclick="setOrder('random',this)">Door elkaar</button>
       </div>
       <div class="card-title">Beschikbare tijd</div>
       <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1.25rem">
@@ -1070,7 +1070,33 @@ async function startQuiz(){
 }
 function renderQuestion(){const{cards,idx}=quizSession;if(idx>=cards.length){showResult();return;}const c=cards[idx],pct=Math.round(idx/cards.length*100);if(quizMode==='anki')renderAnki(c,pct);else renderType(c,pct);}
 function renderType(c,pct){
-  document.getElementById('quiz-play').innerHTML=`<div class="quiz-wrap"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div style="font-size:12px;color:var(--muted);text-align:right;margin-bottom:1rem">${quizSession.idx+1} / ${quizSession.cards.length}</div><div class="quiz-card"><div style="display:flex;gap:6px"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="font-size:12px;color:var(--muted)">${c.week} · ${c.theme}</span></div><div class="quiz-q">${c.question}</div><textarea id="ans" placeholder="Typ je antwoord hier..."></textarea><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" onclick="skipQ()">Overslaan</button><button class="btn btn-primary" onclick="submitType()">Controleer →</button></div><div id="fb"></div></div></div>`;
+  const keywords=c.answer.split(/\s+/).filter(w=>w.length>5).slice(0,4).map(w=>w.replace(/[^a-zA-ZÀ-ÿ]/g,'')).filter(Boolean);
+  const kwHint=keywords.length?keywords.map(w=>w.slice(0,2)+'…').join(' · '):'—';
+  document.getElementById('quiz-play').innerHTML=`<div class="quiz-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+      <button class="btn btn-sm" onclick="restartQuiz()" style="color:var(--muted);font-size:12px">← Terug</button>
+      <span style="font-size:12px;color:var(--muted)">${quizSession.idx+1} / ${quizSession.cards.length}</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+    <div class="quiz-card">
+      <div style="display:flex;gap:6px;margin-bottom:0.75rem"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="font-size:12px;color:var(--muted)">${c.week} · ${c.theme}</span></div>
+      <div class="quiz-q">${c.question}</div>
+      <textarea id="ans" placeholder="Typ je antwoord hier..."></textarea>
+      <div id="hint-box" style="display:none;margin-top:8px;padding:8px 12px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--radius-sm);font-size:12.5px;color:var(--amber)">
+        <strong>Sleutelwoorden:</strong> ${kwHint}
+        <button class="btn btn-sm" onclick="getAIHint(${c.id})" id="ai-hint-btn" style="margin-left:10px;font-size:11px;color:var(--muted)">Betere hint →</button>
+        <span id="ai-hint-text"></span>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:space-between;margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="document.getElementById('hint-box').style.display=document.getElementById('hint-box').style.display==='none'?'block':'none'" style="color:var(--muted)">Hint</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="skipQ()">Overslaan</button>
+          <button class="btn btn-primary" onclick="submitType()">Controleer →</button>
+        </div>
+      </div>
+      <div id="fb"></div>
+    </div>
+  </div>`;
 }
 function renderAnki(c,pct){
   document.getElementById('quiz-play').innerHTML=`<div class="quiz-wrap"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div style="font-size:12px;color:var(--muted);text-align:right;margin-bottom:1rem">${quizSession.idx+1} / ${quizSession.cards.length}</div><div class="quiz-card"><div style="display:flex;gap:6px"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="font-size:12px;color:var(--muted)">${c.week} · ${c.theme}</span></div><div class="quiz-q">${c.question}</div><div class="anki-hint">Denk na over het antwoord, druk dan op <strong>spatie</strong> om het te onthullen</div><div class="anki-answer" id="anki-ans">${c.answer}</div><div id="anki-rating" style="display:none"><div style="display:flex;justify-content:center;margin:1rem 0 0.5rem"><button class="btn btn-nl" onclick="quizExplainNL(${c.id})">Uitleg in NL</button></div><div id="quiz-nl-${c.id}"></div><div style="font-size:12.5px;color:var(--muted);text-align:center;margin:0.5rem 0">Hoe goed kende je dit?</div><div class="rating-row"><button class="rating-btn r1" onclick="rateAnki(1,${c.id})">1<span class="rating-label">Wist ik niet</span></button><button class="rating-btn r2" onclick="rateAnki(2,${c.id})">2<span class="rating-label">Nauwelijks</span></button><button class="rating-btn r3" onclick="rateAnki(3,${c.id})">3<span class="rating-label">Beetje</span></button><button class="rating-btn r4" onclick="rateAnki(4,${c.id})">4<span class="rating-label">Goed</span></button><button class="rating-btn r5" onclick="rateAnki(5,${c.id})">5<span class="rating-label">Zeker weten!</span></button></div></div></div></div>`;
@@ -1125,6 +1151,18 @@ async function continueQuiz(){
   updateLiveStats();renderQuestion();
 }
 function restartQuiz(){document.getElementById('quiz-setup').style.display='block';document.getElementById('quiz-play').style.display='none';}
+async function getAIHint(cardId){
+  const c=quizSession.cards.find(x=>x.id===cardId)||quizSession.cards[quizSession.idx];
+  const btn=document.getElementById('ai-hint-btn');
+  const out=document.getElementById('ai-hint-text');
+  if(btn){btn.disabled=true;btn.textContent='...';}
+  try{
+    const raw=await ai(`Geef een korte hint (1 zin, in het Nederlands) voor deze flashcard-vraag zonder het antwoord te onthullen.\nVraag: ${c.question}\nAntwoord: ${c.answer}\nHint:`,120);
+    if(out)out.innerHTML=` <em style="color:var(--text)">${raw.trim()}</em>`;
+    if(btn)btn.style.display='none';
+  }catch(e){if(out)out.textContent=' (hint niet beschikbaar)';}
+  finally{if(btn&&btn.style.display!=='none'){btn.disabled=false;btn.textContent='Betere hint →';}}
+}
 
 // ── Essay ──
 async function generateEssayQuestion(){
@@ -1641,7 +1679,7 @@ Object.assign(window, {
   setMode, setTime, quickQuiz, setOrder,
   loadQuizWeeks, startQuiz,
   rateAnki, submitType, skipQ, nextQ,
-  continueQuiz, restartQuiz,
+  continueQuiz, restartQuiz, getAIHint,
   generateEssayQuestion, submitEssay, quizExplainNL,
   sendChat, askExample,
   saveNote, loadNotes, editNote, deleteNote, cancelEditNote, toggleNoteItem, toggleNoteFullscreen, rteCmd, generateCardsFromNote,
