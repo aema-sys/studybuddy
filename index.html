@@ -1080,7 +1080,8 @@ function renderType(c,pct){
     </div>
     <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
     <div class="quiz-card">
-      <div style="display:flex;gap:6px;margin-bottom:0.75rem"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="font-size:12px;color:var(--muted)">${c.week} · ${c.theme}</span></div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:0.75rem"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="font-size:12px;color:var(--muted)">${c.week} · ${c.theme}</span><button class="btn btn-sm" onclick="showInlineEdit(${c.id})" style="margin-left:auto;color:var(--muted);padding:2px 7px;font-size:13px" title="Kaart bewerken">✏</button></div>
+      <div id="quiz-card-content">
       <div class="quiz-q">${c.question}</div>
       <textarea id="ans" placeholder="Typ je antwoord hier..."></textarea>
       <div id="hint-box" style="display:none;margin-top:8px;padding:8px 12px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--radius-sm);font-size:12.5px;color:var(--amber)">
@@ -1097,11 +1098,12 @@ function renderType(c,pct){
         </div>
       </div>
       <div id="fb"></div>
+      </div>
     </div>
   </div>`;
 }
 function renderAnki(c,pct){
-  document.getElementById('quiz-play').innerHTML=`<div class="quiz-wrap"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div style="font-size:12px;color:var(--muted);text-align:right;margin-bottom:1rem">${quizSession.idx+1} / ${quizSession.cards.length}</div><div class="quiz-card"><div style="display:flex;gap:6px"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="font-size:12px;color:var(--muted)">${c.week} · ${c.theme}</span></div><div class="quiz-q">${c.question}</div><div class="anki-hint">Denk na over het antwoord, druk dan op <strong>spatie</strong> om het te onthullen</div><div class="anki-answer" id="anki-ans">${c.answer}</div><div id="anki-rating" style="display:none"><div style="display:flex;justify-content:center;margin:1rem 0 0.5rem"><button class="btn btn-nl" onclick="quizExplainNL(${c.id})">Uitleg in NL</button></div><div id="quiz-nl-${c.id}"></div><div style="font-size:12.5px;color:var(--muted);text-align:center;margin:0.5rem 0">Hoe goed kende je dit?</div><div class="rating-row"><button class="rating-btn r1" onclick="rateAnki(1,${c.id})">1<span class="rating-label">Wist ik niet</span></button><button class="rating-btn r2" onclick="rateAnki(2,${c.id})">2<span class="rating-label">Nauwelijks</span></button><button class="rating-btn r3" onclick="rateAnki(3,${c.id})">3<span class="rating-label">Beetje</span></button><button class="rating-btn r4" onclick="rateAnki(4,${c.id})">4<span class="rating-label">Goed</span></button><button class="rating-btn r5" onclick="rateAnki(5,${c.id})">5<span class="rating-label">Zeker weten!</span></button></div></div></div></div>`;
+  document.getElementById('quiz-play').innerHTML=`<div class="quiz-wrap"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><div style="font-size:12px;color:var(--muted);text-align:right;margin-bottom:1rem">${quizSession.idx+1} / ${quizSession.cards.length}</div><div class="quiz-card"><div style="display:flex;gap:6px;align-items:center"><span class="tag tag-${c.vak==='CC'?'cc':'dc'}">${c.vak}</span><span style="font-size:12px;color:var(--muted)">${c.week} · ${c.theme}</span><button class="btn btn-sm" onclick="showInlineEdit(${c.id})" style="margin-left:auto;color:var(--muted);padding:2px 7px;font-size:13px" title="Kaart bewerken">✏</button></div><div id="quiz-card-content"><div class="quiz-q">${c.question}</div><div class="anki-hint">Denk na over het antwoord, druk dan op <strong>spatie</strong> om het te onthullen</div><div class="anki-answer" id="anki-ans">${c.answer}</div><div id="anki-rating" style="display:none"><div style="display:flex;justify-content:center;margin:1rem 0 0.5rem"><button class="btn btn-nl" onclick="quizExplainNL(${c.id})">Uitleg in NL</button></div><div id="quiz-nl-${c.id}"></div><div style="font-size:12.5px;color:var(--muted);text-align:center;margin:0.5rem 0">Hoe goed kende je dit?</div><div class="rating-row"><button class="rating-btn r1" onclick="rateAnki(1,${c.id})">1<span class="rating-label">Wist ik niet</span></button><button class="rating-btn r2" onclick="rateAnki(2,${c.id})">2<span class="rating-label">Nauwelijks</span></button><button class="rating-btn r3" onclick="rateAnki(3,${c.id})">3<span class="rating-label">Beetje</span></button><button class="rating-btn r4" onclick="rateAnki(4,${c.id})">4<span class="rating-label">Goed</span></button><button class="rating-btn r5" onclick="rateAnki(5,${c.id})">5<span class="rating-label">Zeker weten!</span></button></div></div></div></div></div>`;
   document.addEventListener('keydown',ankiSpace);
 }
 function ankiSpace(e){if(e.code==='Space'||e.key===' '){e.preventDefault();const a=document.getElementById('anki-ans'),r=document.getElementById('anki-rating');if(a&&!a.classList.contains('visible')){a.classList.add('visible');if(r)r.style.display='block';}document.removeEventListener('keydown',ankiSpace);}}
@@ -1193,6 +1195,35 @@ async function dontKnow(){
   quizSession.cards.push(c);
   updateLiveStats();
 }
+
+// Inline bewerken tijdens quiz sessie
+function showInlineEdit(cardId){
+  const c=quizSession.cards.find(x=>x.id===cardId)||quizSession.cards[quizSession.idx];
+  const box=document.getElementById('quiz-card-content');
+  if(!box)return;
+  box.innerHTML=`
+    <div style="margin-top:4px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:3px">Vraag</div>
+      <textarea id="eq" style="width:100%;min-height:60px;font-size:14px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);resize:vertical">${c.question}</textarea>
+      <div style="font-size:11px;color:var(--muted);margin:8px 0 3px">Antwoord</div>
+      <textarea id="ea" style="width:100%;min-height:60px;font-size:14px;padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);resize:vertical">${c.answer}</textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="btn btn-sm" onclick="cancelInlineEdit()">Annuleren</button>
+        <button class="btn btn-sm btn-primary" onclick="saveInlineEdit(${cardId})">Opslaan</button>
+      </div>
+    </div>`;
+}
+async function saveInlineEdit(cardId){
+  const q=document.getElementById('eq').value.trim();
+  const a=document.getElementById('ea').value.trim();
+  if(!q||!a)return;
+  await sb.from('flashcards').update({question:q,answer:a}).eq('id',cardId);
+  // Update in-memory card
+  const c=quizSession.cards.find(x=>x.id===cardId);
+  if(c){c.question=q;c.answer=a;}
+  renderQuestion();
+}
+function cancelInlineEdit(){renderQuestion();}
 
 async function getAIHint(cardId){
   const c=quizSession.cards.find(x=>x.id===cardId)||quizSession.cards[quizSession.idx];
@@ -1728,6 +1759,7 @@ Object.assign(window, {
   loadQuizWeeks, startQuiz,
   rateAnki, submitType, submitTypeSelf, rateSelf, dontKnow, skipQ, nextQ,
   continueQuiz, restartQuiz, getAIHint,
+  showInlineEdit, saveInlineEdit, cancelInlineEdit,
   generateEssayQuestion, submitEssay, quizExplainNL,
   sendChat, askExample,
   saveNote, loadNotes, editNote, deleteNote, cancelEditNote, toggleNoteItem, toggleNoteFullscreen, rteCmd, generateCardsFromNote,
