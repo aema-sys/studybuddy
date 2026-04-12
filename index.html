@@ -411,6 +411,30 @@ textarea{resize:vertical;min-height:100px;line-height:1.6;}
     <div id="gen-loading" class="loading-row" style="display:none"><div class="spinner"></div>Flashcards genereren via AI...</div>
     <div id="summary-result" style="display:none;margin-top:1rem"><div class="card-title">AI-samenvatting</div><div class="summary-box" id="summary-text"></div></div>
   </div>
+
+  <!-- CSV import (NotebookLM) -->
+  <div class="card" style="margin-top:1rem">
+    <div class="card-title">CSV importeren (NotebookLM)</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:0.75rem">Upload een CSV-bestand met flashcards uit NotebookLM. De eerste rij mag een koptekst zijn (bijv. <em>Front, Back</em>).</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0.75rem">
+      <select id="csv-vak"><option value="">Kies vak...</option><option value="DC">Digital Crime (DC)</option><option value="CC">Conflict & Cooperation (C&C)</option></select>
+      <input type="text" id="csv-week" placeholder="Week / thema (bijv. Week 3 — Ransomware)"/>
+    </div>
+    <div class="upload-zone" onclick="document.getElementById('csvInput').click()" style="padding:1.25rem">
+      <div style="font-size:22px;margin-bottom:4px;opacity:0.4">📄</div>
+      <div style="font-weight:500;font-size:14px">Klik om een CSV-bestand te kiezen</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">.csv</div>
+    </div>
+    <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleCSVImport(event)"/>
+    <div id="csv-preview" style="display:none;margin-top:0.75rem">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px"><span id="csv-count"></span> kaartjes gevonden — controleer de preview:</div>
+      <div id="csv-preview-list" style="max-height:220px;overflow-y:auto;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:12.5px"></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px">
+        <button class="btn" onclick="document.getElementById('csv-preview').style.display='none'">Annuleren</button>
+        <button class="btn btn-primary" id="csv-import-btn" onclick="confirmCSVImport()">Importeer flashcards →</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- FLASHCARDS -->
@@ -905,6 +929,59 @@ Material:\n${text.slice(0,8000)}`;
   }catch(err){toast('Fout: '+err.message);}
   finally{if(btn){btn.disabled=false;btn.textContent='+ Flashcards';}}
 }
+// ── CSV Import ──
+let _csvRows=[];
+function handleCSVImport(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const text=ev.target.result;
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    // Detecteer scheidingsteken (komma of puntkomma)
+    const sep=lines[0].includes(';')?';':',';
+    // Sla koptekstrij over als die 'front','back','vraag','antwoord' bevat
+    let start=0;
+    const first=lines[0].toLowerCase();
+    if(first.includes('front')||first.includes('back')||first.includes('vraag')||first.includes('antwoord')||first.includes('question')||first.includes('answer'))start=1;
+    _csvRows=[];
+    for(let i=start;i<lines.length;i++){
+      // Split op sep maar respecteer aanhalingstekens
+      const cols=lines[i].match(/("(?:[^"]|"")*"|[^,;]+)(?=[,;]|$)/g)||lines[i].split(sep);
+      if(cols.length<2)continue;
+      const q=cols[0].replace(/^"|"$/g,'').replace(/""/g,'"').trim();
+      const a=cols[1].replace(/^"|"$/g,'').replace(/""/g,'"').trim();
+      if(q&&a)_csvRows.push({q,a});
+    }
+    if(!_csvRows.length){toast('Geen kaartjes gevonden in dit bestand.');e.target.value='';return;}
+    // Preview tonen
+    document.getElementById('csv-count').textContent=_csvRows.length;
+    document.getElementById('csv-preview-list').innerHTML=_csvRows.slice(0,10).map((r,i)=>`
+      <div style="padding:7px 10px;border-bottom:1px solid var(--border2);display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="color:var(--text)">${r.q}</div>
+        <div style="color:var(--muted)">${r.a}</div>
+      </div>`).join('')+((_csvRows.length>10)?`<div style="padding:7px 10px;color:var(--muted);font-size:12px">...en nog ${_csvRows.length-10} kaartjes</div>`:'');
+    document.getElementById('csv-preview').style.display='block';
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+async function confirmCSVImport(){
+  const vak=document.getElementById('csv-vak').value;
+  const week=document.getElementById('csv-week').value.trim();
+  if(!vak){toast('Kies eerst een vak.');return;}
+  if(!week){toast('Vul een week/thema in.');return;}
+  if(!_csvRows.length){toast('Geen kaartjes om te importeren.');return;}
+  const btn=document.getElementById('csv-import-btn');
+  btn.disabled=true;btn.textContent='Bezig...';
+  const rows=_csvRows.map(r=>({vak,week,theme:week,question:r.q,answer:r.a,mat_type:'csv'}));
+  const{error}=await sb.from('flashcards').insert(rows);
+  if(error){toast('Fout: '+error.message);btn.disabled=false;btn.textContent='Importeer flashcards →';return;}
+  toast(`✓ ${rows.length} flashcards geïmporteerd!`);
+  document.getElementById('csv-preview').style.display='none';
+  _csvRows=[];
+  showTab('cards');
+}
+
 async function generateSummary(){
   const text=document.getElementById('up-text').value.trim(),vak=document.getElementById('up-vak').value,week=document.getElementById('up-week').value;
   if(!text){toast('Voeg eerst tekst toe.');return;}
@@ -1757,7 +1834,7 @@ Object.assign(window, {
   showTab, closeModal, saveEdit,
   dragOver, dragLeave, dropFile, handleFile,
   toggleDarkMode, toggleSidebar, updateWordCount, cancelUpload, applyNoteTemplate, launchConfetti,
-  generateCards, generateSummary,
+  generateCards, generateSummary, handleCSVImport, confirmCSVImport,
   loadCards, editCard, deleteCard, explainNL, resetCard,
   updateSelectedCount, toggleSelectAll, deleteSelected, filterCards, openNoteForWeek, openCardsForWeek,
   setMode, setTime, quickQuiz, setOrder,
